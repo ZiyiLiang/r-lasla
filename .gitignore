@@ -48,9 +48,10 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
-# Results and pictures
+# Results and data files
 /pics 
 /results
+/data
 
 # Internal files for debugging purposes
 /experiments/debug.R

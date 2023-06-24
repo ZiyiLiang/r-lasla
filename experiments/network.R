@@ -1,12 +1,8 @@
-#----------------------------------------------------------------------------------------
-# Name: latla_network.R
-# Description:
-#   Test the latla method under the network setting where dimensions of primary and
-#   auxiliary data do not match.
-#----------------------------------------------------------------------------------------
+# Set working directory to the LASLA folder
+setwd("~/GitHub/LASLA")
+source('./methods/lasla_funcs.R')
+source('./methods/utils.R')
 
-
-source("C:/Users/liang/OneDrive/Desktop/LATLA/LATLA-code/latla_funcs.R")
 
 ## Simulation 1:
 ##  Generate signal \theta first which will serve as the latent variable,
@@ -24,14 +20,14 @@ pis <- rep(0.1, m)
 
 bh.fdr<-rep(0, np)
 bh.etp<-rep(0, np)
-latla.dd.fdr<-rep(0, np)
-latla.dd.etp<-rep(0, np)
+lasla.dd.fdr<-rep(0, np)
+lasla.dd.etp<-rep(0, np)
 
 
 bh.fdp<-matrix(rep(0, nrep*np), np, nrep)
 bh.ntp<-matrix(rep(0, nrep*np), np, nrep)
-latla.dd.fdp<-matrix(rep(0, nrep*np), np, nrep)
-latla.dd.ntp<-matrix(rep(0, nrep*np), np, nrep)
+lasla.dd.fdp<-matrix(rep(0, nrep*np), np, nrep)
+lasla.dd.ntp<-matrix(rep(0, nrep*np), np, nrep)
 
 
 for (i in 1:np){
@@ -53,41 +49,41 @@ for (i in 1:np){
 
 
     # generate the distance matrix
-    d_latla<-matrix(rep(0,m*m),m,m)
+    d_lasla<-matrix(rep(0,m*m),m,m)
     for (k in 1:m) {
       for (h in min((k+1),m):m) {
-        d_latla[k,h]<-(theta[k]==theta[h])*abs(rnorm(1,0,0.5))+(theta[k]!=theta[h])*abs(rnorm(1,1,0.5))
+        d_lasla[k,h]<-(theta[k]==theta[h])*abs(rnorm(1,0,0.5))+(theta[k]!=theta[h])*abs(rnorm(1,1,0.5))
       }
     }
     for(k in 2:m) {
       for (h in 1:(k-1)) {
-        d_latla[k,h]<-d_latla[h,k]
+        d_lasla[k,h]<-d_lasla[h,k]
       }
     }
-    d_latla <- d_latla*2
-    pis_latla<-latla_pis(x, d_latla, pval=pv, tau=bh.func(pv,0.8)$th)
+    d_lasla <- d_lasla*2
+    pis_lasla<-lasla_pis(x, d_lasla, pval=pv, tau=bh.func(pv,0.8)$th)
 
     bh.res<-bh.func(pv, q)
     bh.de<-bh.res$de
     bh.fdp[i, j]<-sum((1-theta)*bh.de)/max(sum(bh.de), 1)
     bh.ntp[i, j]<-sum(theta*bh.de)/sum(theta)
 
-    weight<-latla_weights(x,d_latla,pis_latla,mu0,sd0)
-    latla.dd.res<-latla_thres(pvs=pv, pis_latla, ws=weight, q)
-    latla.dd.de<-latla.dd.res$de
-    latla.dd.fdp[i, j]<-sum((1-theta)*latla.dd.de)/max(sum(latla.dd.de), 1)
-    latla.dd.ntp[i, j]<-sum(theta*latla.dd.de)/sum(theta)
+    weight<-lasla_weights(x,d_lasla,pis_lasla,mu0,sd0)
+    lasla.dd.res<-lasla_thres(pvs=pv, pis_lasla, ws=weight, q)
+    lasla.dd.de<-lasla.dd.res$de
+    lasla.dd.fdp[i, j]<-sum((1-theta)*lasla.dd.de)/max(sum(lasla.dd.de), 1)
+    lasla.dd.ntp[i, j]<-sum(theta*lasla.dd.de)/sum(theta)
 
   }
 
   bh.fdr[i]<-mean(bh.fdp[i,])
   bh.etp[i]<-mean(bh.ntp[i,])
-  latla.dd.fdr[i]<-mean(latla.dd.fdp[i,])
-  latla.dd.etp[i]<-mean(latla.dd.ntp[i,])
+  lasla.dd.fdr[i]<-mean(lasla.dd.fdp[i,])
+  lasla.dd.etp[i]<-mean(lasla.dd.ntp[i,])
 }
 
-nw_fdr1.mthd<-cbind(bh.fdr, latla.dd.fdr)
-nw_etp1.mthd<-cbind(bh.etp, latla.dd.etp)
+nw_fdr1.mthd<-cbind(bh.fdr, lasla.dd.fdr)
+nw_etp1.mthd<-cbind(bh.etp, lasla.dd.etp)
 
 ## Simulation 2:
 ##  Generate signal \theta first which will serve as the latent variable,
@@ -105,13 +101,13 @@ pis <- rep(0.1, m)
 
 bh.fdr<-rep(0, np)
 bh.etp<-rep(0, np)
-latla.dd.fdr<-rep(0, np)
-latla.dd.etp<-rep(0, np)
+lasla.dd.fdr<-rep(0, np)
+lasla.dd.etp<-rep(0, np)
 
 bh.fdp<-matrix(rep(0, np*nrep), nrep, np)
 bh.ntp<-matrix(rep(0, np*nrep), nrep, np)
-latla.dd.fdp<-matrix(rep(0, np*nrep), nrep, np)
-latla.dd.ntp<-matrix(rep(0, np*nrep), nrep, np)
+lasla.dd.fdp<-matrix(rep(0, np*nrep), nrep, np)
+lasla.dd.ntp<-matrix(rep(0, np*nrep), nrep, np)
 
 for (i in 1:nrep){
   cat("\n", "Network_setting(noise level) iteration i= ", i, "\n", "iteration j=")
@@ -132,31 +128,31 @@ for (i in 1:nrep){
     cat(j)
     dis<-dis.vec[j]
     # generate the distance matrix
-    d_latla<-matrix(rep(0,m*m),m,m)
+    d_lasla<-matrix(rep(0,m*m),m,m)
     for (k in 1:m) {
       for (h in min((k+1),m):m) {
-        d_latla[k,h]=(theta[k]==theta[h])*abs(rnorm(1,dis,0.5))+(theta[k]!=theta[h])*abs(rnorm(1,1,0.5))
+        d_lasla[k,h]=(theta[k]==theta[h])*abs(rnorm(1,dis,0.5))+(theta[k]!=theta[h])*abs(rnorm(1,1,0.5))
       }
     }
     for(k in 2:m) {
       for (h in 1:(k-1)) {
-        d_latla[k,h]=d_latla[h,k]
+        d_lasla[k,h]=d_lasla[h,k]
       }
     }
-    d_latla <- d_latla*2
+    d_lasla <- d_lasla*2
 
-    pis_latla<-latla_pis(x, d_latla, pval=pv, bh.func(pv,0.8)$th)
+    pis_lasla<-lasla_pis(x, d_lasla, pval=pv, bh.func(pv,0.8)$th)
 
     bh.res<-bh.func(pv, q)
     bh.de<-bh.res$de
     bh.fdp[i, j]<-sum((1-theta)*bh.de)/max(sum(bh.de), 1)
     bh.ntp[i, j]<-sum(theta*bh.de)/sum(theta)
 
-    weight<-latla_weights(x,d_latla,pis_latla,mu0,sd0)
-    latla.dd.res<-latla_thres(pvs=pv, pis_latla, ws=weight, q)
-    latla.dd.de<-latla.dd.res$de
-    latla.dd.fdp[i, j]<-sum((1-theta)*latla.dd.de)/max(sum(latla.dd.de), 1)
-    latla.dd.ntp[i, j]<-sum(theta*latla.dd.de)/sum(theta)
+    weight<-lasla_weights(x,d_lasla,pis_lasla,mu0,sd0)
+    lasla.dd.res<-lasla_thres(pvs=pv, pis_lasla, ws=weight, q)
+    lasla.dd.de<-lasla.dd.res$de
+    lasla.dd.fdp[i, j]<-sum((1-theta)*lasla.dd.de)/max(sum(lasla.dd.de), 1)
+    lasla.dd.ntp[i, j]<-sum(theta*lasla.dd.de)/sum(theta)
 
   }
 }
@@ -165,22 +161,22 @@ for (i in 1:np) {
   bh.fdr[i]<-mean(bh.fdp[,i])
   bh.etp[i]<-mean(bh.ntp[,i])
 
-  latla.dd.fdr[i]<-mean(latla.dd.fdp[,i])
-  latla.dd.etp[i]<-mean(latla.dd.ntp[,i])
+  lasla.dd.fdr[i]<-mean(lasla.dd.fdp[,i])
+  lasla.dd.etp[i]<-mean(lasla.dd.ntp[,i])
 }
 
-nw_fdr2.mthd<-cbind(bh.fdr, latla.dd.fdr)
-nw_etp2.mthd<-cbind(bh.etp, latla.dd.etp)
+nw_fdr2.mthd<-cbind(bh.fdr, lasla.dd.fdr)
+nw_etp2.mthd<-cbind(bh.etp, lasla.dd.etp)
 
 
 par(mfrow=c(2, 2), mgp=c(2, 0.5, 0), mar=c(3, 3, 2, 1)+0.1)
 matplot(mean.vec, nw_fdr1.mthd, type="o", pch=1:4, lwd=2, main="Network-setting1 FDR Comparison", xlab=expression(mu[1]), ylab="FDR", ylim=c(0.01, 0.10))
-legend("top", c("BH","LATLA.DD"), pch=1:3, col=1:6, lwd=2)
+legend("top", c("BH","LASLA.DD"), pch=1:3, col=1:6, lwd=2)
 
 matplot(mean.vec, nw_etp1.mthd, type="o", pch=1:4, lwd=2, main="Network-setting1 Power Comparison", xlab=expression(mu[1]), ylab="Power")
 
 matplot(dis.vec, nw_fdr2.mthd, type="o", pch=1:4, lwd=2, main="Network-setting2 FDR Comparison", xlab=expression(mu[2]), ylab="FDR", ylim=c(0.01, 0.10))
-legend("top", c("BH","LATLA.DD"), pch=1:3, col=1:6, lwd=2)
+legend("top", c("BH","LASLA.DD"), pch=1:3, col=1:6, lwd=2)
 
 matplot(dis.vec, nw_etp2.mthd, type="o", pch=1:4, lwd=2, main="Network-setting2 Power Comparison", xlab=expression(mu[2]), ylab="Power")
 
