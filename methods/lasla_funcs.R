@@ -98,8 +98,13 @@ lasla_weights <- function(x, d, pis, mu0, sd0,
     mva[i] <- sum(st.tor[1:i])/i
   }
   # calculating the oracle threshold
-  th <- max(which(mva<=q))
-  th <- st.tor[th]
+  if (sum(mva<=q)==0){
+    th <- -Inf
+  }
+  else{
+    th <- max(which(mva<=q))
+    th <- st.tor[th]
+  }
   
   # calculating the weights
   weights <- rep(0,m)
@@ -184,6 +189,10 @@ lasla_weights <- function(x, d, pis, mu0, sd0,
 lasla_pis <- function(x, d, pval, tau=0.9, h='auto', eps=0.1)
 {
   m <- length(x)
+  # tau should be in (0,1), check validity
+  if ((tau <= 0) | (tau >= 1)){
+    stop('Invalid tau, tau should be in (0,1).')
+  }
   # eps should be in [0,1], check validity
   if ((eps < 0) | (eps > 1)){
     stop('Invalid eps, eps should be in [0,1].')

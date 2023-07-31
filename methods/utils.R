@@ -79,8 +79,14 @@ latent_awor.func <- function(x, s, pis, mu1, sigma, mu0, sd0, q=0.05){
     mva[i] <- sum(st.tor[1:i])/i
   }
   # calculating the oracle threshold
-  th <- max(which(mva<=q))
-  th <- st.tor[th]
+  if (sum(mva<=q)==0){
+    th <- -Inf
+  }
+  else{
+    th <- max(which(mva<=q))
+    th <- st.tor[th]
+  }
+  
   
   # calculating the weights
   awor <- rep(0,m)

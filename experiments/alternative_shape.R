@@ -1,17 +1,23 @@
 # Set working directory to the LASLA folder
-setwd("~/GitHub/LASLA")
+setwd("~/GitHub/r-lasla")
 source('./methods/lasla_funcs.R')
 source('./methods/utils.R')
 
-# Let one variable gamma controls the level of asymmetry, side information is non-informative. 
 
+
+#######################################
+#     Experiment Parameters           #
+#######################################
 m<-1000
 mean<-3
+# Note that the sigma refers to the variance of the Gaussian distribution,
+# not the standard deviation.
 sigma.vec<-seq(from=0.2, to=1, by=0.2)
 pis<-rep(0.1, m)
 q<-0.05
 np<-length(sigma.vec)
 nrep<-1000
+pb <- progress_bar$new(total = nrep)   # show progress bar
 
 
 #------ overall the FDR and power-------------
@@ -38,7 +44,7 @@ lasla.or.ntp<-matrix(rep(0, np*nrep), nrep, np)
 
 for (i in 1:nrep)
 {
-  cat("\n", "iteration i= ", i, "\n", "repetition j=")
+  pb$tick()
   theta<-rbinom(m, size=1, prob=pis)
   pii<-sum(theta)/m
   x0<-rnorm(m, mean=0, sd=1)
@@ -49,7 +55,6 @@ for (i in 1:nrep)
   for (j in 1:np)
   {
     set.seed(2000*i+j)
-    cat(j)
     sigma<-sigma.vec[j]
     isNoisy<-rbinom(m, size=1, prob=1/2)
     mu0<-rep(0,m)
@@ -60,15 +65,6 @@ for (i in 1:nrep)
     x<-(1-theta)*x0+theta*x1
     pv<-2*pnorm(-abs(x), 0, 1)
     
-    # generating the distance matrix
-    d<-matrix(rep(0,m^2),m,m)
-    for (k in 1:m) {
-      d[k,]<-abs(sd1-sd1[k])
-    }
-    
-    # h = density(1:m)$bw
-    # pis_lasla <- lasla_pis(x, d=d, pval=pv, tau=bh.func(pv,0.8)$th, h=h, eps=0)
-    # pis_lasla <- lasla_pis(x, d=d, pval=pv, tau=0.6, h=h, eps=0)
     
     qq=q/(1-pii)
     bh.res<-bh.func(pv, qq)
@@ -82,28 +78,11 @@ for (i in 1:nrep)
     law.or.fdp[i, j]<-sum((1-theta)*law.or.de)/max(sum(law.or.de), 1)
     law.or.ntp[i, j]<-sum(theta*law.or.de)/sum(theta)
     
-    # pis_law <- pis_lasla
-    # nu<-10e-5
-    # pis_law[which(pis_law<nu)]<-nu # stabilization
-    # pis_law[which(pis_law>1-nu)]<-1-nu # stabilization
-    # ws_laws<-pis_law/(1-pis_law)
-    
-    # law.dd.res<-lasla_thres(pvs=pv, pis=pis_law, ws=ws_laws, q)
-    # law.dd.de<-law.dd.res$de
-    # law.dd.fdp[i, j]<-sum((1-theta)*law.dd.de)/max(sum(law.dd.de), 1)
-    # law.dd.ntp[i, j]<-sum(theta*law.dd.de)/sum(theta)
-    
     awor <- awor_sideinfo.func(x, pis, mu0, mu1, sd0, sd1, q)
     lasla.or.res<-lasla_thres(pvs=pv, pis=pis, ws=awor, q)
     lasla.or.de<-lasla.or.res$de
     lasla.or.fdp[i, j]<-sum((1-theta)*lasla.or.de)/max(sum(lasla.or.de), 1)
     lasla.or.ntp[i, j]<-sum(theta*lasla.or.de)/sum(theta)
-    
-    # weight<-lasla_weights(x,d,pis_lasla,mu0,sd0, h=h, eps=0)
-    # lasla.dd.res<-lasla_thres(pvs=pv, pis=pis_lasla, ws=weight, q)
-    # lasla.dd.de<-lasla.dd.res$de
-    # lasla.dd.fdp[i, j]<-sum((1-theta)*lasla.dd.de)/max(sum(lasla.dd.de), 1)
-    # lasla.dd.ntp[i, j]<-sum(theta*lasla.dd.de)/sum(theta)
   }
 }
 
@@ -122,10 +101,33 @@ altshape_fdr.mthd<-cbind(bh.fdr, lasla.or.fdr, law.or.fdr)
 altshape_etp.mthd<-cbind(bh.etp, lasla.or.etp, law.or.etp)
 
 
+
+#######################################
+#          Preview Results            #
+#######################################
 par(mfrow=c(2, 2), mgp=c(2, 0.5, 0), mar=c(3, 3, 2, 1)+0.1)
 
-matplot(sigma.vec, altshape_fdr.mthd, type="o", pch=1:4, lwd=2, main="Setting2 FDR Comparison", xlab=expression(sigma), ylab="FDR", ylim=c(0.01, 0.10))
+matplot(sigma.vec, altshape_fdr.mthd, type="o", pch=1:4, lwd=2, main="FDR Comparison", xlab=expression(sigma), ylab="FDR", ylim=c(0.01, 0.10))
 legend("top", c("PV.OR",  "LASLA.OR", "LAWS.OR"), pch=1:3, col=1:3, lwd=2)
 
-matplot(sigma.vec, altshape_etp.mthd, type="o", pch=1:3, lwd=2, main="Setting2 Power Comparison", xlab=expression(sigma), ylab="Power")
+matplot(sigma.vec, altshape_etp.mthd, type="o", pch=1:3, lwd=2, main="Power Comparison", xlab=expression(sigma), ylab="Power")
 
+
+
+#######################################
+#             Save Results            #
+#######################################
+data_dir <- "./results"
+
+method_names <- c("PV.OR", "LASLA.OR", "LAWS.OR")
+
+results <- data.frame()
+
+for (i in 1:length(method_names)) {
+  tmp <- data.frame(Method = rep(method_names[i],length(sigma.vec)),
+                    FDR = altshape_fdr.mthd[,i],
+                    Power = altshape_etp.mthd[,i],
+                    Sigma = sigma.vec)
+  results <- rbind(results, tmp)
+}
+save(results, file=sprintf("%s/alt_dist.RData", data_dir))

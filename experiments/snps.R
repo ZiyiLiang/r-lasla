@@ -1,16 +1,15 @@
 # Set working directory to the LASLA folder
-setwd("~/GitHub/LASLA")
+setwd("~/GitHub/r-lasla")
 source('./methods/lasla_funcs.R')
 source('./methods/utils.R')
 
 
 ## Real Data Application: Detecting disease related SNPs.
+
+# Compute the z-scores and distance matrix
 prepare_data <- function(){
   # read the ld info file
   lddata<-read.delim("./data/myld.ld",sep="")
-
-  # read the summary stats for the selected 5000 SNPs
-  testgenom<-read.delim("./data/S5000.txt")
 
   #calculate the z-scores
   z_snp<-testgenom$Beta/testgenom$SE
@@ -29,21 +28,25 @@ prepare_data <- function(){
   }
 }
 
-if (FALSE) {
+data_stored = TRUE
+if (!data_stored) {
   prepare_data()
+}else{
+  load("./data/z_snp.RData")
+  load("./data/d_snp.RData")
 }
 
-
+# read the summary stats for the selected 5000 SNPs
+testgenom<-read.delim("./data/S5000.txt")
 rs_snp<-read.delim("./data/IDs.txt", header = FALSE)
 
 m<-5000
 mu0<-rep(0,m)
 sd0<-rep(1,m)
-# fdr_level<-c(0.001,0.01,0.05,0.1)
-fdr_level<-c(0.05)
+fdr_level<-c(0.001,0.01,0.05,0.1)
+#fdr_level<-c(0.05)
 nrep<-length(fdr_level)
 
-de<-matrix(rep(0, m*nrep), nrep, m)
 
 pv<-2*pnorm(-abs(z_snp), 0, 1)
 
@@ -51,8 +54,13 @@ bon.nr<-rep(0,nrep)
 bh.nr<-rep(0,nrep)
 lasla.dd.nr<-rep(0,nrep)
 
+bon.de<-matrix(rep(0, m*nrep), nrep, m)
+bh.de<-matrix(rep(0, m*nrep), nrep, m)
+lasla.dd.de<-matrix(rep(0, m*nrep), nrep, m)
+
+
 for (i in 1:nrep) {
-  cat("iteration:", i, "\n")
+  cat("Running with FDR level:", fdr_level[i], "\n")
   q<-fdr_level[i]
   
   bh.res<-bh.func(pv, q)
@@ -66,30 +74,64 @@ for (i in 1:nrep) {
   bon.nr[i]<-length(which(pv<=q/m))
   bh.nr[i]<-bh.res$nr
   lasla.dd.nr[i]<-lasla.dd.res$nr
-  de[i,]<-lasla.dd.res$de
+  
+  bon.de[i,which(pv<=q/m)]<-1
+  bh.de[i,]<-bh.res$de
+  lasla.dd.de[i,]<-lasla.dd.res$de
 }
 
-############## Plot the sub-network ####################
-if (False){
+
+
+#######################################
+#             Save Results            #
+#######################################
+data_dir <- "./results"
+
+method_names <- c("Bonferroni", "BH", "LASLA")
+
+rejections <- data.frame()
+nr = cbind(bon.nr, bh.nr,lasla.dd.nr)
+
+for (i in 1:length(method_names)) {
+  tmp <- data.frame(Method = rep(method_names[i],length(fdr_level)),
+                    FDR = fdr_level,
+                    nr = nr[,i])
+  rejections<- rbind(rejections, tmp)
+}
+save(rejections, file=sprintf("%s/SNPs.RData", data_dir))
+
+
+
+#######################################
+#          Plot networks             #
+#######################################
+if (FALSE){
   install.packages("network")
-  library(network)
   install.packages('ergm')
-  library(ergm)
 }
 
+library(network)
+library(ergm)
 
-# under fdr=0.05, analysis the rejections of bh and lasla
-bh.rej.idx <- which(bh.res$de == 1)
+# under FDR=0.05, analysis the rejections made by BH and LASLA
+i = 3
+bh.rej.idx <- which(bh.de[i,] == 1)
 bh.rej.snp <- testgenom[bh.rej.idx,]
-lasla.rej.idx <- which(lasla.dd.res$de == 1)
+lasla.rej.idx <- which(lasla.dd.de[i,] == 1)
 lasla.rej.snp <- testgenom[lasla.rej.idx,]
 
-## find snps that are rejected bh lasla but not by bh
+# Verify that rejections by BH is a subset of which by LASLA
+if (all(bh.rej.idx %in% lasla.rej.idx)){
+  cat("BH rejctions at FDR level ", format(fdr_level[i], nsmall=2), 
+        "is a subset of LASLA's. \n")
+}
+
+# Find SNPs that are rejected by LASLA but not by BH
 extra.rej.idx <- setdiff(lasla.rej.idx, bh.rej.idx)
 extra.rej.snp <- testgenom[extra.rej.idx,]
 
 
-## full net rejected by lasla
+# Full net rejected by LASLA
 n <- length(lasla.rej.idx)
 fullmat <- matrix(rep(0, n*n), n,n)
 for (i in 1:n) {
@@ -107,7 +149,7 @@ fullnet <- as.network(x=fullmat,
 )
 network.vertex.names(fullnet) <- lasla.rej.idx
 
-## create a attribute indicating whether the snp is rejected by bh
+## create a attribute indicating whether the SNP is rejected by BH
 in_bhnet <- rep(0,n)
 for (i in 1:n) {
   in_bhnet[i] = is.element(lasla.rej.idx[i], bh.rej.idx)
@@ -126,37 +168,16 @@ for (i in 1:n) {
 
 plot.network(fullnet,
              vertex.col = node_colors,
-             vertex.cex = 3,
+             vertex.cex = 5,
              displaylabels = T,
              label.pos = 5,
              displayisolates = F)
 
 
-## net by bh
-n <- length(bh.rej.idx)
-bhmat <- matrix(rep(0, n*n), n,n)
-for (i in 1:n) {
-  for (j in i:n) {
-    bhmat[i,j] = 1-d_snp[bh.rej.idx[i], bh.rej.idx[j]]
-    bhmat[j,i] = bhmat[i,j]
-  }
-}
-bhmat <- ceiling(bhmat)
-diag(bhmat) <- 0    ## to make sure there is no self-edge
-bhnet <- as.network(x=bhmat,
-                  directed = FALSE,
-                  loops = FALSE,
-                  matrix.type = 'adjacency'
-)
-network.vertex.names(bhnet) <- rs_snp[bh.rej.idx,]
 
 
-
-## find some subnets
-## delete unwanted nodes from the fullnet
-# remove_nodes <- c(3015,4347,3507,1881,2048,1835,898,3765,2778,714,1105,837,4818,621,2520,368,476,920,1730,4112,1559,
-#                   4873,2935,581,788,4940,1937,3522,2677,615,1622,2082,3932,1714,1615,291,3913,2711,1863,2344,
-#                   207,4926,4927,2828,1076,3347,1541,4995,2760,4030,2543,2356,4594,2070,4367,741,4316,3969,1986,1146,2366)
+# Remove some of the isolated subnetworks detected by both methods 
+remove_nodes <- c(1146,2366,3507,4347,1881,2048,1541,4995,1986,4316,3969)
 remove_nodes <- as.integer(remove_nodes)
 remove_idx <- rep(length(remove_nodes))
 for (i in 1:length(remove_nodes)) {
@@ -189,10 +210,14 @@ for (i in 1:dim(submat)[1]) {
   }
 }
 
+par(mar = c(0, 0, 0, 0))
+
 plot.network(subnet,
              vertex.col = node_colors,
-             vertex.cex = 1.5,
+             vertex.cex = 1.3,
              # displaylabels = T,
              # label.pos = 5,
             displayisolates = F,
-             )
+            pad=0,             
+            edge.col = "#333333"
+            )

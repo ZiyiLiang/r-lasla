@@ -1,5 +1,5 @@
 # Set working directory to the LASLA folder
-setwd("~/GitHub/LASLA")
+setwd("~/GitHub/r-lasla")
 source('./methods/lasla_funcs.R')
 source('./methods/utils.R')
 
@@ -11,7 +11,7 @@ pis<-rep(0.1,m)
 noise_l.vec <- seq(from=0.05, to=0.1, by=0.01)
 q <- 0.05
 np <- length(noise_l.vec)
-nrep <- 100
+nrep <- 50
 
 
 bh.fdr<-rep(0, np)
@@ -26,26 +26,22 @@ bh.ntp<-matrix(rep(0, np*nrep), nrep, np)
 lasla.dd.fdp<-matrix(rep(0, np*nrep), nrep, np)
 lasla.dd.ntp<-matrix(rep(0, np*nrep), nrep, np)
 
+pb <- progress_bar$new(total = nrep)   # show progress bar
 for (i in 1:nrep)
 {
-  cat("\n", "TF iteration i= ", i, "\n", "iteration j=")
-
+  pb$tick()
   theta<-rbinom(p, size=1, prob=pis)
-  pii<-sum(theta)/p
-  ## null distribution of the test statistics
-  ## t distribution in ols, asymptotical standard normal in inverse regression
   mu0<-rep(0,p)
   sd0<-rep(1,p)
 
-  # generate the real data
-  x<-matrix(rnorm(m*p),m,p)
+  x<-matrix(rnorm(m*p),m,p)   # Primary data
   beta<-matrix(rep(0,p),1,p)
   # assign real parameter value for non-null coefficients
   sign <- rbinom(sum(theta), size=1, prob=0.2)  # controls the symmetry
   beta[which(theta==1)] = abs(rnorm(sum(theta),0.3,0.1))*(-1)^sign
   y<-x%*%t(beta)+rnorm(m)
 
-  # calculate the t score and p value of the coefficients
+  # Calculate the t score and p value of the coefficients
   model=lm(y~x)
   tmp_se <- sqrt(diag(vcov(model)))[-1]
   tmp_beta <- model$coefficients[-1]
@@ -53,10 +49,9 @@ for (i in 1:nrep)
   pv <- 2*pnorm(-abs(t))
 
   for (j in 1:np){
-    cat(j)
     noise <- noise_l.vec[j]
 
-    # construct the first auxiliary sequence
+    # Construct the first auxiliary sequence
     beta1 <- beta + rnorm(p,0,noise)
     y1 <- x%*%t(beta1)+rnorm(m)
     model1=lm(y1~x)
@@ -64,7 +59,7 @@ for (i in 1:nrep)
     tmp_beta <- model1$coefficients[-1]
     t1 <- tmp_beta/tmp_se
 
-    # construct the second auxiliary sequence
+    # Construct the second auxiliary sequence
     beta2 <- beta + rnorm(p,0,noise)
     y2 <- x%*%t(beta2)+rnorm(m)
     model2=lm(y2~x)
@@ -72,7 +67,7 @@ for (i in 1:nrep)
     tmp_beta <- model2$coefficients[-1]
     t2 <- tmp_beta/tmp_se
 
-    # construct the second auxiliary sequence
+    # Construct the second auxiliary sequence
     beta3 <- beta + rnorm(p,0,noise)
     y3 <- x%*%t(beta3)+rnorm(m)
     model3=lm(y3~x)
@@ -80,7 +75,7 @@ for (i in 1:nrep)
     tmp_beta <- model3$coefficients[-1]
     t3 <- tmp_beta/tmp_se
 
-    #distance matrix for lasla
+    # Distance matrix
     d_lasla<-matrix(rep(0,p^2),p,p)
     S<-cbind(t1,t2, t3)
     R<-cov(S)
@@ -102,7 +97,7 @@ for (i in 1:nrep)
     bh.fdp[i, j]<-sum((1-theta)*bh.de)/max(sum(bh.de), 1)
     bh.ntp[i, j]<-sum(theta*bh.de)/sum(theta)
 
-    weight<-lasla_weights(t,d_lasla,pis_lasla,mu0,sd0,eps=0)
+    weight<-lasla_weights(t,d_lasla,pis_lasla,mu0,sd0,eps=0,progress = FALSE)
     lasla.dd.res<-lasla_thres(pvs=pv, pis_lasla, ws=weight, q)
     lasla.dd.de<-lasla.dd.res$de
     lasla.dd.fdp[i, j]<-sum((1-theta)*lasla.dd.de)/max(sum(lasla.dd.de), 1)
@@ -122,6 +117,10 @@ fdr_reg1.mthd<-cbind(bh.fdr, lasla.dd.fdr)
 etp_reg1.mthd<-cbind(bh.etp, lasla.dd.etp)
 
 
+
+#######################################
+#          Preview Results            #
+#######################################
 par(mfrow=c(2, 2), mgp=c(2, 0.5, 0), mar=c(3, 3, 2, 1)+0.1)
 
 matplot(noise_l.vec, fdr_reg1.mthd, type="o", pch=1:7, lwd=2, main="Regression-setting1 FDR Comparison", xlab=expression(sigma), ylab="FDR", ylim=c(0.01, 0.10))
@@ -129,3 +128,23 @@ legend("top", c("BH","LASLA.DD"), pch=1:6, col=1:6, lwd=2)
 
 matplot(noise_l.vec, etp_reg1.mthd, type="o", pch=1:7, lwd=2, main="Regression-setting1 Power Comparison", xlab=expression(sigma), ylab="Power")
 
+
+
+#######################################
+#             Save Results            #
+#######################################
+data_dir <- "./results"
+
+method_names <- c("BH", "LASLA.DD")
+
+# Setting 1
+results <- data.frame()
+
+for (i in 1:length(method_names)) {
+  tmp <- data.frame(Method = rep(method_names[i],length(noise_l.vec)),
+                    FDR = fdr_reg1.mthd[,i],
+                    Power = etp_reg1.mthd[,i],
+                    Sigma = noise_l.vec)
+  results <- rbind(results, tmp)
+}
+save(results, file=sprintf("%s/regression1.RData", data_dir))
