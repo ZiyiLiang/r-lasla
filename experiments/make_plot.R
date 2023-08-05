@@ -296,7 +296,7 @@ ggsave(filename = sprintf("%s/latent2.pdf", fig.dir), plot = pp,
 #######################################
 Method.values <- c("BH", "LASLA.OR","LASLA.DD","AVG")
 Method.labels <- c("BH", "LASLA.OR","Mahalanobis","Average")
-color.scale <- c("orange", "#CC79A7", "#66CCFF", "#3366CC")
+color.scale <- c("#CC79A7", "#66CCFF", "#3366CC","orange")
 
 
 plot.alpha <- 0.05
@@ -315,8 +315,8 @@ pp <- results  %>%
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.5,y=0.1), alpha=0) +
   geom_point(data=df.ghost, aes(x=2.0,y=0), alpha=0) +
-  scale_color_manual(values=color.scale, labels=Method.labels) +
-  scale_shape_manual(values=shape.scale, labels=Method.labels) +
+  scale_color_manual(values=color.scale, labels=c("BH"="BH", "LASLA.OR"="LASLA.OR","LASLA.DD"="Mahalanobis","AVG"="Average"),,breaks=Method.values) +
+  scale_shape_manual(values=shape.scale, labels=c("BH"="BH", "LASLA.OR"="LASLA.OR","LASLA.DD"="Mahalanobis","AVG"="Average"),breaks=Method.values) +
   theme_bw()+
   theme(
     strip.text = element_text(size = font_size, color = "black"),
@@ -343,7 +343,7 @@ ggsave(filename = sprintf("%s/latent_mult1.pdf", fig.dir), plot = pp,
 #######################################
 Method.values <- c("BH", "LASLA.OR","LASLA.DD","AVG")
 Method.labels <- c("BH", "LASLA.OR","Mahalanobis","Average")
-color.scale <- c("orange", "#CC79A7", "#66CCFF", "#3366CC")
+color.scale <- c("#CC79A7", "#66CCFF", "#3366CC", "orange")
 
 
 plot.alpha <- 0.05
@@ -359,11 +359,12 @@ pp <- results  %>%
   geom_point(alpha=pt_alpha, size=pt_size) +
   geom_line(size=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
+  
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.5,y=0.1), alpha=0) +
   geom_point(data=df.ghost, aes(x=2.0,y=0), alpha=0) +
-  scale_color_manual(values=color.scale, labels=Method.labels) +
-  scale_shape_manual(values=shape.scale, labels=Method.labels) +
+  scale_color_manual(values=color.scale, labels=c("BH"="BH", "LASLA.OR"="LASLA.OR","LASLA.DD"="Mahalanobis","AVG"="Average"),,breaks=Method.values) +
+  scale_shape_manual(values=shape.scale, labels=c("BH"="BH", "LASLA.OR"="LASLA.OR","LASLA.DD"="Mahalanobis","AVG"="Average"),breaks=Method.values) +
   theme_bw()+
   theme(
     strip.text = element_text(size = font_size, color = "black"),
@@ -378,6 +379,7 @@ pp <- results  %>%
   xlab(expression(sigma)) +
   ylab("")+
   ggtitle("(b)")
+  pp
 
 ggsave(filename = sprintf("%s/latent_mult2.pdf", fig.dir), plot = pp,
        dpi = 300, device=NULL, width=plot_width, height=plot_height)
