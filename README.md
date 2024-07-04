@@ -8,7 +8,7 @@ Efficiency again of LASLA is illustrated through various synthetic experiments a
 
 ## Contents
 
- - `methods/` R codes implementing our methods, benchmarks and some utility fucntions.
+ - `methods/` R codes implementing our methods, benchmarks and some utility functions.
  - `experiments/` Codes to replicate all numerical experiments and corresponding figures discussed in the accompanying paper.
   
   
