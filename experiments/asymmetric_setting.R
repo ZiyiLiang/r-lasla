@@ -55,12 +55,6 @@ for (i in 1:nrep)
     x<-(1-theta)*x0+theta*x1
     pv<-2*pnorm(-abs(x), 0, 1)
     
-    # generating the distance matrix
-    d<-matrix(rep(0,m^2),m,m)
-    for (k in 1:m) {
-      d[k,]<-abs(1:m-k)
-    }
-    
     qq=q/(1-pii)
     bh.res<-bh.func(pv, qq)
     bh.de<-bh.res$de

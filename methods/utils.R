@@ -392,20 +392,23 @@ awor.func <- function(x, pis, mu0, mu1, sd0, sd1, q=0.05){
 }
 
 
-awor_asymmetric.func <- function(x, pis, gamma, mu0, mu1, sd0, sd1, q=0.05){
+awor_asymmetric.func <- function(x, pis, gamma, mu1, sd1, q=0.05){
   ## oracle lasla weight function for asymmetric setting with gamma 
   # controlling the level of asymmetry.
   # x: vector of normal variables
   # pis: conditional probabilities
   # gamma: level of asymmetry
-  # mu0: null mean vector
   # mu1: alternative mean vector
-  # sd0: null sd vector
   # sd1: alternative sd vector
   # q: fdr level
   # Values
   # awor: the asymmetricity adapted oracle weights
   m <- length(x)
+  
+  # Null distribution is assumed to be standard normal
+  mu0 <- rep(0, m)
+  sd0 <- rep(1, m)
+  
   tor <- rep(0,m)
   # calculating the oracle statistics
   num <- (1-pis)*dnorm(x,mu0,sd0)
@@ -460,24 +463,60 @@ awor_asymmetric.func <- function(x, pis, gamma, mu0, mu1, sd0, sd1, q=0.05){
 }
 
 
-awor_sideinfo.func <- function(x, pis, mu0, mu1, sd0, sd1, q=0.05){
-  ## oracle LATLA weight function for asymmetric setting with gamma 
-  # controlling the level of asymmetry.
+lasla_oracle_weights.func <- function(x, pis, gamma, dist_type, q = 0.05, ...){
+  # This function computes the oracle lasla weights 
+  #
+  # Args:
   # x: vector of normal variables
   # pis: conditional probabilities
-  # gamma: level of asymmetry
-  # mu0: null mean vector
-  # mu1: alternative mean vector
-  # sd0: null sd vector
-  # sd1: alternative sd vector
+  # dist_type: type of the alternative distribution
   # q: fdr level
-  # Values
-  # awor: the asymmetricity adapted oracle weights
+  #
+  # Output:
+  # weights: the oracle weights
+  
   m <- length(x)
+  
+  # Null distribution is assumed to be standard normal
+  mu0 <- rep(0, m)
+  sd0 <- rep(1, m)
+  
+  # Initialize variables for distribution parameters
+  mu1 <- sd1 <- loc <- scale <- shape <- NULL
+  
+  # Parse additional arguments
+  args <- list(...)
+  
+  # Handle different distribution types
+  if (dist_type == "normal") {
+    mu1 <- args$mu1
+    sd1 <- args$sd1
+    if (is.null(mu1) || is.null(sd1)) {
+      stop("For normal distribution, 'mu1' and 'sd1' must be provided.")
+    }
+  } else if (dist_type == "skewed_normal") {
+    loc <- args$loc
+    scale <- args$scale
+    shape <- args$shape
+    if (is.null(loc) || is.null(scale) || is.null(shape)) {
+      stop("For skewed normal distribution, 'loc', 'scale', and 'shape' must be provided.")
+    }
+  } else {
+    stop("Unsupported distribution type. Use 'normal' or 'skewed_normal'.")
+  }
+  
+  
+  # Compute the oracle threshold
   tor <- rep(0,m)
   # calculating the oracle statistics
   num <- (1-pis)*dnorm(x,mu0,sd0)
-  den <- pis*(0.5*dnorm(x,mu1,sd1) + 0.5*dnorm(x,-mu1,sd1))
+  
+  if (dist_type == "normal") {
+    den <- pis*(gamma*dnorm(x,mu1,sd1)+(1-gamma)*dnorm(x,-mu1,sd1))
+  }
+  else if (dist_type == "skewed_normal") {
+    den <- pis*(gamma*dsn(x,loc, scale, shape) + (1-gamma)*dsn(x,-loc, scale, shape))
+  }
   tor <- num/(num + den)
   
   # calculating the moving average
@@ -491,14 +530,20 @@ awor_sideinfo.func <- function(x, pis, mu0, mu1, sd0, sd1, q=0.05){
   th <- st.tor[th]
   
   # calculating the weights
-  awor <- rep(0,m)
+  weights <- rep(0,m)
   nt <- seq(min(x)-2, 0, 0.05) # negative searching window
   pt <- seq(0, max(x)+2, 0.05) # postive searching window
   t_star <- rep(0,m)
   for (i in 1:m){
     if(x[i]>=0){
       num <- (1-pis[i])*dnorm(pt,mu0[i],sd0[i])
-      den <- pis[i]*(0.5*dnorm(pt,mu1[i],sd1[i])+0.5*dnorm(pt,-mu1[i],sd1[i]))
+      if (dist_type == "normal") {
+        den <- pis[i]*(gamma[i]*dnorm(pt,mu1[i],sd1[i])+(1-gamma[i])*dnorm(pt,-mu1[i],sd1[i]))
+      }
+      else if (dist_type == "skewed_normal") {
+        den <- pis[i]*(gamma[i]*dsn(pt,loc[i], scale[i], shape[i]) + (1-gamma[i])*dsn(pt,-loc[i], scale[i], shape[i]))
+      }
+      
       t_temp <- num/(num+den)
       if(length(which(t_temp<=th))==0){
         t_star[i] <- max(x)+2
@@ -506,11 +551,17 @@ awor_sideinfo.func <- function(x, pis, mu0, mu1, sd0, sd1, q=0.05){
       else{
         t_star[i] = pt[min(which(t_temp<=th))]
       }
-      awor[i] <- 1-pnorm(t_star[i], mu0[i], sd0[i])
+      weights[i] <- 1-pnorm(t_star[i], mu0[i], sd0[i])
     }
     else{
       num <- (1-pis[i])*dnorm(nt,mu0[i],sd0[i])
-      den <- pis[i]*(0.5*dnorm(nt,mu1[i],sd1[i])+0.5*dnorm(nt,-mu1[i],sd1[i]))
+      if (dist_type == "normal") {
+        den <- pis[i]*(gamma[i]*dnorm(nt,mu1[i],sd1[i])+(1-gamma[i])*dnorm(nt,-mu1[i],sd1[i]))
+      }
+      else if (dist_type == "skewed_normal") {
+        den <- pis[i]*(gamma[i]*dsn(nt,loc[i], scale[i], shape[i]) + (1-gamma[i])*dsn(nt,-loc[i], scale[i], shape[i]))
+      }
+      
       t_temp <- num/(num+den)
       if(length(which(t_temp<=th))==0){
         t_star[i] <- min(x)-2
@@ -518,11 +569,10 @@ awor_sideinfo.func <- function(x, pis, mu0, mu1, sd0, sd1, q=0.05){
       else{
         t_star[i] = nt[max(which(t_temp<=th))]
       }
-      awor[i] <- pnorm(t_star[i], mu0[i], sd0[i])
+      weights[i] <- pnorm(t_star[i], mu0[i], sd0[i])
     }
   }
-  #awor <- awor*m/sum(awor)
   nu<-10e-5
-  awor[which(awor<nu)]<-nu # stabilization
-  return(awor)
+  weights[which(weights<nu)]<-nu # stabilization
+  return(weights)
 }

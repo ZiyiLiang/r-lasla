@@ -1,5 +1,5 @@
 # Set working directory to the LASLA folder
-setwd("~/GitHub/r-lasla")
+setwd("C:/Users/liang/Documents/GitHub/r-lasla")
 source('./methods/lasla_funcs.R')
 source('./methods/utils.R')
 
@@ -57,9 +57,7 @@ for (i in 1:nrep)
     set.seed(2000*i+j)
     sigma<-sigma.vec[j]
     isNoisy<-rbinom(m, size=1, prob=1/2)
-    mu0<-rep(0,m)
     mu1<-rep(mean,m)
-    sd0<-rep(1,m)
     sd1<-isNoisy*rep(1,m) + (1-isNoisy)*rep(sigma,m)
     x1<-isNoisy*(x1_base+rnorm(m,0,0.9)) + (1-isNoisy)*(x1_base+rnorm(m,0,sigma-0.1))
     x<-(1-theta)*x0+theta*x1
@@ -78,8 +76,8 @@ for (i in 1:nrep)
     law.or.fdp[i, j]<-sum((1-theta)*law.or.de)/max(sum(law.or.de), 1)
     law.or.ntp[i, j]<-sum(theta*law.or.de)/sum(theta)
     
-    awor <- awor_sideinfo.func(x, pis, mu0, mu1, sd0, sd1, q)
-    lasla.or.res<-lasla_thres(pvs=pv, pis=pis, ws=awor, q)
+    wor_lasla <- lasla_oracle_weights.func(x, pis, dist_type="normal", q, mu1=mu1, sd1=sd1)
+    lasla.or.res<-lasla_thres(pvs=pv, pis=pis, ws=wor_lasla, q)
     lasla.or.de<-lasla.or.res$de
     lasla.or.fdp[i, j]<-sum((1-theta)*lasla.or.de)/max(sum(lasla.or.de), 1)
     lasla.or.ntp[i, j]<-sum(theta*lasla.or.de)/sum(theta)
@@ -117,17 +115,21 @@ matplot(sigma.vec, altshape_etp.mthd, type="o", pch=1:3, lwd=2, main="Power Comp
 #######################################
 #             Save Results            #
 #######################################
-data_dir <- "./results"
+save = FALSE
 
-method_names <- c("PV.OR", "LASLA.OR", "LAWS.OR")
-
-results <- data.frame()
-
-for (i in 1:length(method_names)) {
-  tmp <- data.frame(Method = rep(method_names[i],length(sigma.vec)),
-                    FDR = altshape_fdr.mthd[,i],
-                    Power = altshape_etp.mthd[,i],
-                    Sigma = sigma.vec)
-  results <- rbind(results, tmp)
+if (save){
+  data_dir <- "./results"
+  
+  method_names <- c("PV.OR", "LASLA.OR", "LAWS.OR")
+  
+  results <- data.frame()
+  
+  for (i in 1:length(method_names)) {
+    tmp <- data.frame(Method = rep(method_names[i],length(sigma.vec)),
+                      FDR = altshape_fdr.mthd[,i],
+                      Power = altshape_etp.mthd[,i],
+                      Sigma = sigma.vec)
+    results <- rbind(results, tmp)
+  }
+  save(results, file=sprintf("%s/alt_dist.RData", data_dir))
 }
-save(results, file=sprintf("%s/alt_dist.RData", data_dir))
