@@ -7,8 +7,8 @@ source('./methods/utils.R')
 #     Experiment Parameters           #
 #######################################
 m<-1200
-#noise_l.vec<-seq(from=0.5, to=2, by=0.25)
-noise_l.vec<-seq(from=2, to=2, by=0.25)
+noise_l.vec<-seq(from=0.5, to=2, by=0.25)
+#noise_l.vec<-seq(from=0.5, to=2, by=0.5)
 pis<-rep(0.1, m)
 q<-0.05
 np<-length(noise_l.vec)
@@ -28,6 +28,9 @@ adaptMT.etp<-rep(0, np)
 wbh.fdr<-rep(0, np)
 wbh.etp<-rep(0, np)
 
+awbh.fdr<-rep(0, np)
+awbh.etp<-rep(0, np)
+
 sabha.fdr<-rep(0, np)
 sabha.etp<-rep(0, np)
 
@@ -44,6 +47,9 @@ adaptMT.ntp<-matrix(rep(0, np*nrep), nrep, np)
 
 wbh.fdp<-matrix(rep(0, np*nrep), nrep, np)
 wbh.ntp<-matrix(rep(0, np*nrep), nrep, np)
+
+awbh.fdp<-matrix(rep(0, np*nrep), nrep, np)
+awbh.ntp<-matrix(rep(0, np*nrep), nrep, np)
 
 sabha.fdp<-matrix(rep(0, np*nrep), nrep, np)
 sabha.ntp<-matrix(rep(0, np*nrep), nrep, np)
@@ -96,7 +102,7 @@ for (i in 1:nrep)
     lasla.dd.ntp[i, j]<-sum(theta*lasla.dd.de)/sum(theta)
     
     adaptMT.res <-  adapt_xgboost(matrix(s, m, 1) ,pv,
-                                verbose = list(print = FALSE, 
+                                verbose = list(print = FALSE,
                                                fit = FALSE,
                                                ms = FALSE),
                                 piargs = list("nrounds" = 50,
@@ -118,6 +124,13 @@ for (i in 1:nrep)
     wbh.de<-wbh.res$de
     wbh.fdp[i, j]<-sum((1-theta)*wbh.de)/max(sum(wbh.de), 1)
     wbh.ntp[i, j]<-sum(theta*wbh.de)/sum(theta)
+    
+    ll <- bh.func(pv,0.8)$th
+    phat <- (max(sweight) + sum(sweight * (pv > ll))) / (m * (1 - ll)) 
+    awbh.res<-bh.func(pv/sweight, q/phat)
+    awbh.de<-awbh.res$de
+    awbh.fdp[i, j]<-sum((1-theta)*awbh.de)/max(sum(awbh.de), 1)
+    awbh.ntp[i, j]<-sum(theta*awbh.de)/sum(theta)
 
     ws_sabha<-1/(1-pis_lasla)
     sabha.res<-bh.func(pv/ws_sabha, q)
@@ -142,13 +155,15 @@ for (i in 1:np) {
 
   wbh.fdr[i]<-mean(wbh.fdp[,i])
   wbh.etp[i]<-mean(wbh.ntp[,i])
+  
+  awbh.fdr[i]<-mean(awbh.fdp[,i])
+  awbh.etp[i]<-mean(awbh.ntp[,i])
 
   sabha.fdr[i]<-mean(sabha.fdp[,i])
   sabha.etp[i]<-mean(sabha.ntp[,i])
 }
-fdr_tf1.mthd<-cbind(bh.fdr, lasla.or.fdr, lasla.dd.fdr, adaptMT.fdr, sabha.fdr, wbh.fdr)
-etp_tf1.mthd<-cbind(bh.etp, lasla.or.etp, lasla.dd.etp, adaptMT.etp, sabha.etp, wbh.etp)
-
+fdr_tf1.mthd<-cbind(bh.fdr, lasla.or.fdr, lasla.dd.fdr, adaptMT.fdr, sabha.fdr, wbh.fdr, awbh.fdr)
+etp_tf1.mthd<-cbind(bh.etp, lasla.or.etp, lasla.dd.etp, adaptMT.etp, sabha.etp, wbh.etp, awbh.etp)
 
 
 #######################################
@@ -159,7 +174,7 @@ par(mfrow=c(2, 2), mgp=c(2, 0.5, 0), mar=c(3, 3, 2, 1)+0.1)
 matplot(noise_l.vec, fdr_tf1.mthd, type="o", pch=1:4, lwd=2, main="TF-setting1 FDR Comparison", xlab=expression(sigma), ylab="FDR", ylim=c(0, 0.09))
 
 matplot(noise_l.vec, etp_tf1.mthd, type="o", pch=1:4, lwd=2, main="TF-setting1 Power Comparison", xlab=expression(sigma), ylab="Power")
-legend("topright", c("BH", "LASLA.OR","LASLA.DD", "AdaptMT", "SABHA", "WBH"), pch=1:4, col=1:7, lwd=2)
+legend("topright", c("BH", "LASLA.OR","LASLA.DD", "AdaptMT", "SABHA", "WBH", "adaptive-WBH"), pch=1:4, col=1:7, lwd=2)
 
 
 
@@ -168,15 +183,19 @@ legend("topright", c("BH", "LASLA.OR","LASLA.DD", "AdaptMT", "SABHA", "WBH"), pc
 #######################################
 data_dir <- "./results"
 
-method_names <- c("BH", "LASLA.OR","LASLA.DD", "ADAPTMT","SABHA", "WBH")
+save = TRUE
 
-results <- data.frame()
-
-for (i in 1:length(method_names)) {
-  tmp <- data.frame(Method = rep(method_names[i],length(noise_l.vec)),
-                    FDR = fdr_tf1.mthd[,i],
-                    Power = etp_tf1.mthd[,i],
-                    Sigma = noise_l.vec)
-  results <- rbind(results, tmp)
+if (save){
+  method_names <- c("BH", "LASLA.OR","LASLA.DD", "ADAPTMT","SABHA", "WBH", "AWBH")
+  
+  results <- data.frame()
+  
+  for (i in 1:length(method_names)) {
+    tmp <- data.frame(Method = rep(method_names[i],length(noise_l.vec)),
+                      FDR = fdr_tf1.mthd[,i],
+                      Power = etp_tf1.mthd[,i],
+                      Sigma = noise_l.vec)
+    results <- rbind(results, tmp)
+  }
+  save(results, file=sprintf("%s/latent1.RData", data_dir))
 }
-save(results, file=sprintf("%s/latent1.RData", data_dir))

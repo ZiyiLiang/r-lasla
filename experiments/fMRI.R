@@ -7,6 +7,7 @@ library(abind)
 library(adaptMT)
 library(mgcv)
 
+
 ADHD_train <- readMat("./data/ADHD/data_wm_training_(30,36,30)_interpolate.mat")
 ADHD_test <- readMat("./data/ADHD/data_wm_testing_(30,36,30)_interpolate.mat")
 
@@ -129,17 +130,93 @@ for (i in 1:nrep) {
 #######################################
 data_dir <- "./results"
 
-rejections <- data.frame()
-nr = cbind(bh.nr,lasla.dd.nr)
-de <- list(bh.de, lasla.dd.de)
+save= FALSE
 
-method_names <- c("BH", "LASLA")
+if (save){
+  rejections <- data.frame()
+  nr = cbind(bh.nr,lasla.dd.nr)
+  de <- list(bh.de, lasla.dd.de)
+  
+  method_names <- c("BH", "LASLA")
+  
+  rejections <- data.frame(Method=method_names,
+                           FDR=rep(fdr_level, length(method_names)),
+                           nr=nr[1,],
+                           de=I(de))
+  
+  save(rejections, file=sprintf("%s/fMRI.RData", data_dir))
+}
 
-rejections <- data.frame(Method=method_names,
-                         FDR=rep(fdr_level, length(method_names)),
-                         nr=nr[1,],
-                         de=I(de))
 
-save(rejections, file=sprintf("%s/fMRI.RData", data_dir))
+#######################################
+#             Plot Results            #
+#######################################
+library(plotly)
+ 
+loaded = TRUE
+save_csv = FALSE
+
+if (!loaded){
+  load(file=sprintf("%s/fMRI.RData", data_dir))
+  bh.de <- rejections$de[[1]]
+  lasla.de <- rejections$de[[2]]
+}
+
+if (save_csv){
+  write.csv(as.data.frame(bh.de), file = sprintf("%s/bh_de.csv", data_dir), row.names = FALSE)
+  write.csv(as.data.frame(lasla.de), file = sprintf("%s/lasla_de.csv", data_dir), row.names = FALSE)
+}
+
+# Reshape both bh.de and lasla.de to match the 3D structure
+bh.de.array <- array(as.logical(bh.de), dim = c(30, 36, 30))
+lasla.de.array <- array(as.logical(lasla.de), dim = c(30, 36, 30))
+
+# Find coordinates of the rejected regions for bh.de and lasla.de
+bh.rejected.coords <- which(bh.de.array, arr.ind = TRUE)
+lasla.rejected.coords <- which(lasla.de.array, arr.ind = TRUE)
+
+x_range <- c(0, 30)
+y_range <- c(0, 31)
+z_range <- c(0, 30)
+
+camera <- list(eye = list(x = 2.3, y = 2, z = 3.6),
+               up = list(x = 0, y = 0, z = 1))
+
+# Plot for bh.de
+bh_plot <- plot_ly(x = bh.rejected.coords[,1], 
+                   y = bh.rejected.coords[,2], 
+                   z = bh.rejected.coords[,3], 
+                   type = 'scatter3d', 
+                   mode = 'markers',
+                   marker = list(color = 'red2', size = 4)) %>%
+  layout(scene = list(camera = camera,
+                      xaxis = list(title = '', range = x_range, gridcolor ="#D3D3D3"),
+                      yaxis = list(title = '', range = y_range),
+                      zaxis = list(title = '', range = z_range),
+                      aspectratio = list(x = 1, y = 1, z = 0.6)),
+         title = "BH Rejections") %>%
+  config(displayModeBar = TRUE)
 
 
+# Plot for lasla.de
+lasla_plot <- plot_ly(x = lasla.rejected.coords[,1], 
+                      y = lasla.rejected.coords[,2], 
+                      z = lasla.rejected.coords[,3], 
+                      type = 'scatter3d', 
+                      mode = 'markers',
+                      marker = list(color = '#cc3333', size = 4)) %>%
+  layout(scene = list(camera = camera,
+                      xaxis = list(title = '', range = x_range),
+                      yaxis = list(title = '', range = y_range),
+                      zaxis = list(title = '', range = z_range),
+                      aspectratio = list(x = 1, y = 1, z = 0.6)),
+         title = "LASLA Rejections") %>%
+  config(displayModeBar = TRUE)
+
+
+# Preview the 3D plots in browser
+htmlwidgets::saveWidget(bh_plot, "bh_rejected_regions.html")
+browseURL("bh_rejected_regions.html")
+
+htmlwidgets::saveWidget(lasla_plot, "lasla_rejected_regions.html")
+browseURL("lasla_rejected_regions.html")

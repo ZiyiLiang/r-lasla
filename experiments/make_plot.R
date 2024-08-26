@@ -1,6 +1,7 @@
 library(tidyverse)
 library(kableExtra)
 library(dplyr)
+library(patchwork)
 
 options(width=160)
 
@@ -162,51 +163,115 @@ ggsave(filename = sprintf("%s/hetero-asymmetric.pdf", fig.dir), plot = pp,
 #######################################
 load(sprintf("%s/heterogeneous_distribution.RData", results.dir))
 
+# Define common elements for both plots
+common_theme <- theme_bw() +
+  theme(
+    strip.text = element_text(size = font_size, color = "black"),
+    axis.title = element_text(size = axis_size),
+    axis.text.x = element_blank(),  # Hide x-axis labels
+    axis.ticks.x = element_blank(),  # Hide x-axis ticks
+    axis.text.y = element_text(size = axis_size),
+    legend.text = element_text(size = legend_size),  # Adjust legend text size
+    legend.title = element_text(size = legend_size),
+    plot.margin = margin(5, 5, 5, 5)
+  )
+
 # Filter and plot for FDP
 pp_FDP <- results %>%
   pivot_longer(cols = c("FDP", "Power"), names_to = 'Key', values_to = 'Value') %>%
   filter(Key == "FDP") %>%
   ggplot(aes(x = Method, y = Value, fill = Method)) +
-  geom_boxplot(outlier.shape = NA,width = 0.6, lwd = 0.5) +
+  geom_boxplot(outlier.shape = NA, width = 0.6, lwd = 0.5) +
   scale_fill_manual(values = color.scale) +
   coord_cartesian(ylim = c(0, 0.13)) +  # Set y-axis limit for FDP
-  labs(x = "Method", y="") +
-  theme_bw() +
+  labs(x = "Method", y = "") +
   facet_wrap(. ~Key)+
-  theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = 15),
-    axis.text = element_text(size = 11),
-    legend.position = "none",
-    plot.margin = margin(5, 5, 5, 5)
-  )
-  
+  common_theme +
+  theme(legend.position = "none")  # Remove legend for individual plot
 
 # Filter and plot for Power
 pp_Power <- results %>%
   pivot_longer(cols = c("FDP", "Power"), names_to = 'Key', values_to = 'Value') %>%
   filter(Key == "Power") %>%
   ggplot(aes(x = Method, y = Value, fill = Method)) +
-  geom_boxplot(outlier.shape = NA,width = 0.6, lwd = 0.5) +
+  geom_boxplot(outlier.shape = NA, width = 0.6, lwd = 0.5) +
   scale_fill_manual(values = color.scale) +
-  labs(x = "Method", y="") +
-  theme_bw() +
+  labs(x = "Method", y = "") + 
   facet_wrap(. ~Key)+
+  common_theme
+
+# Combine the two plots and share a single legend
+pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & theme(legend.position = "right")
+
+# Display the combined plot
+pp
+
+ggsave(filename = sprintf("%s/hetero-alt.pdf", fig.dir), plot = pp,
+       dpi = 300, device=NULL, width=plot_width-1, height=plot_height)
+
+
+
+#######################################
+#      Hetero-sparsity setting        #
+#######################################
+key.values <- c("FDR", "Power")
+key.labels <- c("FDR", "Power")
+
+Method.values <- c("LASLA.OR", "AWBH", "WBH")
+Method.labels <- c("LASLA.OR", "Adj-WBH.OR", "WBH.OR")
+
+load(sprintf("%s/heterogeneous_sparsity.RData", results.dir))
+
+results <- results %>%
+  mutate(Method = factor(Method, levels = Method.values, labels = Method.labels))
+
+# Define common elements for both plots
+common_theme <- theme_bw() +
   theme(
     strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = 15),
-    axis.text = element_text(size = 11),
-    legend.position = "none",
+    axis.title = element_text(size = axis_size),
+    axis.text.x = element_blank(),  # Hide x-axis labels
+    axis.ticks.x = element_blank(),  # Hide x-axis ticks
+    axis.text.y = element_text(size = axis_size),
+    legend.text = element_text(size = legend_size),  # Adjust legend text size
+    legend.title = element_text(size = legend_size),
     plot.margin = margin(5, 5, 5, 5)
   )
 
+# Filter and plot for FDP
+pp_FDP <- results %>%
+  pivot_longer(cols = c("FDP", "Power"), names_to = 'Key', values_to = 'Value') %>%
+  filter(Key == "FDP") %>%
+  ggplot(aes(x = Method, y = Value, fill = Method)) +
+  geom_boxplot(outlier.shape = NA, width = 0.6, lwd = 0.5) +
+  scale_fill_manual(values = color.scale) +
+  coord_cartesian(ylim = c(0, 0.06)) +  # Set y-axis limit for FDP
+  labs(x = NULL, y = NULL) +
+  facet_wrap(. ~Key)+
+  common_theme +
+  theme(legend.position = "none")  # Remove legend for individual plot
 
-# Combine the two plots
-pp <- pp_FDP + pp_Power
+# Filter and plot for Power
+pp_Power <- results %>%
+  pivot_longer(cols = c("FDP", "Power"), names_to = 'Key', values_to = 'Value') %>%
+  filter(Key == "Power") %>%
+  ggplot(aes(x = Method, y = Value, fill = Method)) +
+  geom_boxplot(outlier.shape = NA, width = 0.6, lwd = 0.5) +
+  scale_fill_manual(values = color.scale) +
+  coord_cartesian(ylim = c(0.2, 0.85)) +
+  labs(x = NULL, y = NULL)+
+  facet_wrap(. ~Key)+
+  common_theme
 
+# Combine the two plots and share a single legend
+pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & theme(legend.position = "right")
+
+# Display the combined plot
 pp
-ggsave(filename = sprintf("%s/hetero-alt.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=7, height=plot_height)
+ggsave(filename = sprintf("%s/hetero-sparsity.pdf", fig.dir), plot = pp,
+       dpi = 300, device=NULL, width=plot_width-1, height=plot_height)
+
+
 
 #######################################
 #        Network1  setting            #
@@ -315,9 +380,10 @@ ggsave(filename = sprintf("%s/network2.pdf", fig.dir), plot = pp,
 #######################################
 load(sprintf("%s/latent1.RData", results.dir))
 
-Method.values <- c("BH", "LASLA.OR","LASLA.DD", "ADAPTMT","SABHA", "WBH")
-Method.labels <- c("BH", "LASLA.OR","LASLA.DD", "ADAPT", "SABHA", "WBH")
-color.scale <- c("#CC79A7","#66CCFF", "#3366CC", "purple", "orange", "red")
+Method.values <- c("BH", "LASLA.OR","LASLA.DD", "ADAPTMT","SABHA", "WBH", "AWBH")
+Method.labels <- c("BH", "LASLA.OR","LASLA.DD", "AdaPT", "SABHA", "WBH", "Adj-WBH")
+color.scale5 <- c("#CC79A7","#66CCFF", "#3366CC", "purple", "orange")
+color.scale3 <- c("#3366CC", "#CC79A7","#66CCFF")
 
 results <- results %>%
   mutate(Method = factor(Method, levels = Method.values, labels = Method.labels))
@@ -327,19 +393,23 @@ df.nominal <- tibble(Key=c("FDR"), Value=plot.alpha) %>%
   mutate(Key = factor(Key, key.values, key.labels))    
 df.ghost <- tibble(Key=c("FDR","FDR"), Value=c(0.03,0.07), Method="LASLA.DD") %>%
   mutate(Method = factor(Method, Method.values, Method.labels)) %>%
-  mutate(Key = factor(Key, key.values, key.labels))    
-pp <- results  %>%
+  mutate(Key = factor(Key, key.values, key.labels))
+
+# Create the first plot for the first 5 methods
+results_first5 <- results %>%
+  filter(Method %in% c("BH", "LASLA.OR", "LASLA.DD", "AdaPT", "SABHA"))
+
+pp_first5 <- results_first5 %>%
   pivot_longer(cols=c("FDR", "Power"), names_to='Key', values_to='Value') %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Sigma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
   geom_line(size=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
-  # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.5,y=0.1), alpha=0) +
   geom_point(data=df.ghost, aes(x=2.0,y=0), alpha=0) +
-  scale_color_manual(values=color.scale) +
-  scale_shape_manual(values=shape.scale) +
+  scale_color_manual(values=color.scale5) +  # Limit to first 5 colors
+  scale_shape_manual(values=shape.scale[1:5]) +  # Limit to first 5 shapes
   theme_bw()+
   theme(
     strip.text = element_text(size = font_size, color = "black"),
@@ -354,33 +424,21 @@ pp <- results  %>%
   ylab("")+
   ggtitle("(a)")
 
+# Create the second plot for LASLA.DD, WBH, and AWBH
+results_lasla_wbh_awbh <- results %>%
+  filter(Method %in% c("LASLA.DD", "WBH", "Adj-WBH"))
 
-ggsave(filename = sprintf("%s/latent1.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
-
-
-
-#######################################
-#         Latent2  setting            #
-#######################################
-plot.alpha <- 0.05
-df.nominal <- tibble(Key=c("FDR"), Value=plot.alpha) %>%
-  mutate(Key = factor(Key, key.values, key.labels))    
-df.ghost <- tibble(Key=c("FDR","FDR"), Value=c(0.03,0.07), Method="LASLA.DD") %>%
-  mutate(Method = factor(Method, Method.values, Method.labels)) %>%
-  mutate(Key = factor(Key, key.values, key.labels))    
-pp <- results  %>%
+pp_lasla_wbh_awbh <- results_lasla_wbh_awbh %>%
   pivot_longer(cols=c("FDR", "Power"), names_to='Key', values_to='Value') %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
-  ggplot(aes(x=Mean, y=Value, color=Method, shape=Method)) +
+  ggplot(aes(x=Sigma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
   geom_line(size=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
-  # sets the axis limit
-  geom_point(data=df.ghost, aes(x=3.0,y=0.1), alpha=0) +
-  geom_point(data=df.ghost, aes(x=4.0,y=0), alpha=0) +
-  scale_color_manual(values=color.scale) +
-  scale_shape_manual(values=shape.scale) +
+  geom_point(data=df.ghost, aes(x=0.5,y=0.1), alpha=0) +
+  geom_point(data=df.ghost, aes(x=2.0,y=0), alpha=0) +
+  scale_color_manual(values=color.scale3) +  # Limit to specific colors for these methods
+  scale_shape_manual(values=shape.scale[1:3]) +  # Limit to specific shapes for these methods
   theme_bw()+
   theme(
     strip.text = element_text(size = font_size, color = "black"),
@@ -389,18 +447,108 @@ pp <- results  %>%
     legend.text = element_text(size = legend_size),
     legend.title = element_text(size = legend_size),
     plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
-    
+  )+
+  facet_wrap(.~Key, scales="free") +
+  xlab(expression(sigma)) +
+  ylab("")+
+  ggtitle("(a)")
+
+# Display the two plots separately
+pp_first5
+pp_lasla_wbh_awbh
+
+ggsave(filename = sprintf("%s/latent1_weight_comp.pdf", fig.dir), plot = pp_first5,
+       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+ggsave(filename = sprintf("%s/latent1_thres_comp.pdf", fig.dir), plot = pp_lasla_wbh_awbh,
+       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+
+
+#######################################
+#         Latent2  setting            #
+#######################################
+load(sprintf("%s/latent2.RData", results.dir))
+
+Method.values <- c("BH", "LASLA.OR","LASLA.DD", "ADAPT","SABHA", "WBH", "AWBH")
+Method.labels <- c("BH", "LASLA.OR","LASLA.DD", "AdaPT", "SABHA", "WBH", "Adj-WBH")
+color.scale5 <- c("#CC79A7","#66CCFF", "#3366CC", "purple", "orange")
+color.scale3 <- c("#3366CC", "#CC79A7","#66CCFF")
+
+results <- results %>%
+  mutate(Method = factor(Method, levels = Method.values, labels = Method.labels))
+
+plot.alpha <- 0.05
+df.nominal <- tibble(Key=c("FDR"), Value=plot.alpha) %>%
+  mutate(Key = factor(Key, key.values, key.labels))    
+df.ghost <- tibble(Key=c("FDR","FDR"), Value=c(0.03,0.07), Method="LASLA.DD") %>%
+  mutate(Method = factor(Method, Method.values, Method.labels)) %>%
+  mutate(Key = factor(Key, key.values, key.labels))
+
+# Create the first plot for the first 5 methods
+results_first5 <- results %>%
+  filter(Method %in% c("BH", "LASLA.OR", "LASLA.DD", "AdaPT", "SABHA"))
+
+pp_first5 <- results_first5 %>%
+  pivot_longer(cols=c("FDR", "Power"), names_to='Key', values_to='Value') %>%
+  mutate(Key = factor(Key, key.values, key.labels))  %>%
+  ggplot(aes(x=Mean, y=Value, color=Method, shape=Method)) +
+  geom_point(alpha=pt_alpha, size=pt_size) +
+  geom_line(size=l_size, alpha=l_alpha) +
+  geom_hline(data=df.nominal, aes(yintercept=Value)) +
+  geom_point(data=df.ghost, aes(x=3.0,y=0.1), alpha=0) +
+  geom_point(data=df.ghost, aes(x=4.0,y=0), alpha=0) +
+  scale_color_manual(values=color.scale5) +  # Limit to first 5 colors
+  scale_shape_manual(values=shape.scale[1:5]) +  # Limit to first 5 shapes
+  theme_bw()+
+  theme(
+    strip.text = element_text(size = font_size, color = "black"),
+    axis.title = element_text(size = font_size),
+    axis.text = element_text(size = axis_size),
+    legend.text = element_text(size = legend_size),
+    legend.title = element_text(size = legend_size),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(mu)) +
   ylab("")+
   ggtitle("(b)")
 
+# Create the second plot for LASLA.DD, WBH, and AWBH
+results_lasla_wbh_awbh <- results %>%
+  filter(Method %in% c("LASLA.DD", "WBH", "Adj-WBH"))
 
-ggsave(filename = sprintf("%s/latent2.pdf", fig.dir), plot = pp,
+pp_lasla_wbh_awbh <- results_lasla_wbh_awbh %>%
+  pivot_longer(cols=c("FDR", "Power"), names_to='Key', values_to='Value') %>%
+  mutate(Key = factor(Key, key.values, key.labels))  %>%
+  ggplot(aes(x=Mean, y=Value, color=Method, shape=Method)) +
+  geom_point(alpha=pt_alpha, size=pt_size) +
+  geom_line(size=l_size, alpha=l_alpha) +
+  geom_hline(data=df.nominal, aes(yintercept=Value)) +
+  geom_point(data=df.ghost, aes(x=3.0,y=0.1), alpha=0) +
+  geom_point(data=df.ghost, aes(x=4.0,y=0), alpha=0) +
+  scale_color_manual(values=color.scale3) +  # Limit to specific colors for these methods
+  scale_shape_manual(values=shape.scale[1:3]) +  # Limit to specific shapes for these methods
+  theme_bw()+
+  theme(
+    strip.text = element_text(size = font_size, color = "black"),
+    axis.title = element_text(size = font_size),
+    axis.text = element_text(size = axis_size),
+    legend.text = element_text(size = legend_size),
+    legend.title = element_text(size = legend_size),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+  )+
+  facet_wrap(.~Key, scales="free") +
+  xlab(expression(mu)) +
+  ylab("")+
+  ggtitle("(b)")
+
+# Display the two plots separately
+pp_first5
+pp_lasla_wbh_awbh
+
+ggsave(filename = sprintf("%s/latent2_weight_comp.pdf", fig.dir), plot = pp_first5,
        dpi = 300, device=NULL, width=plot_width, height=plot_height)
-
-
+ggsave(filename = sprintf("%s/latent2_thres_comp.pdf", fig.dir), plot = pp_lasla_wbh_awbh,
+       dpi = 300, device=NULL, width=plot_width, height=plot_height)
 
 #######################################
 #       Latent-Mult setting 1        #
@@ -598,5 +746,163 @@ pp
 
 ggsave(filename = sprintf("%s/regression2.pdf", fig.dir), plot = pp,
        dpi = 300, device=NULL, width=plot_width, height=plot_height)
+
+
+
+#######################################
+#        Dependent setting 1          #
+#######################################
+load(sprintf("%s/dependent1.RData", results.dir))
+
+Method.values <- c("BH", "LASLA.DD")
+Method.labels <- c("BH", "LASLA.DD")
+color.scale <- c("#3366CC","#66CCFF")
+
+results <- results %>%
+  mutate(Method = factor(Method, levels = Method.values, labels = Method.labels))
+
+plot.alpha <- 0.05
+df.nominal <- tibble(Key=c("FDR"), Value=plot.alpha) %>%
+  mutate(Key = factor(Key, key.values, key.labels))    
+df.ghost <- tibble(Key=c("FDR","FDR"), Value=c(0.03,0.07), Method="LASLA.DD") %>%
+  mutate(Method = factor(Method, Method.values, Method.labels)) %>%
+  mutate(Key = factor(Key, key.values, key.labels))    
+pp <- results  %>%
+  pivot_longer(cols=c("FDR", "Power"), names_to='Key', values_to='Value') %>%
+  mutate(Key = factor(Key, key.values, key.labels))  %>%
+  ggplot(aes(x=Rho, y=Value, color=Method, shape=Method)) +
+  geom_point(alpha=pt_alpha, size=pt_size) +
+  geom_line(size=l_size, alpha=l_alpha) +
+  geom_hline(data=df.nominal, aes(yintercept=Value)) +
+  # sets the axis limit
+  geom_point(data=df.ghost, aes(x=0.8,y=0.1), alpha=0) +
+  geom_point(data=df.ghost, aes(x=0.8,y=0), alpha=0) +
+  scale_color_manual(values=color.scale) +
+  scale_shape_manual(values=shape.scale) +
+  theme_bw()+
+  theme(
+    strip.text = element_text(size = font_size, color = "black"),
+    axis.title = element_text(size = font_size),
+    axis.text = element_text(size = axis_size),
+    legend.text = element_text(size = legend_size),
+    legend.title = element_text(size = legend_size),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+  )+
+  facet_wrap(.~Key, scales="free") +
+  xlab(expression(rho)) +
+  ylab("")
+pp
+
+ggsave(filename = sprintf("%s/dependent1.pdf", fig.dir), plot = pp,
+       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+
+
+
+#######################################
+#        Dependent setting 2          #
+#######################################
+load(sprintf("%s/dependent2.RData", results.dir))
+
+Method.values <- c("BH", "LASLA.DD")
+Method.labels <- c("BH", "LASLA.DD")
+color.scale <- c("#3366CC","#66CCFF")
+
+results <- results %>%
+  mutate(Method = factor(Method, levels = Method.values, labels = Method.labels))
+
+plot.alpha <- 0.05
+df.nominal <- tibble(Key=c("FDR"), Value=plot.alpha) %>%
+  mutate(Key = factor(Key, key.values, key.labels))    
+df.ghost <- tibble(Key=c("FDR","FDR"), Value=c(0.03,0.07), Method="LASLA.DD") %>%
+  mutate(Method = factor(Method, Method.values, Method.labels)) %>%
+  mutate(Key = factor(Key, key.values, key.labels))    
+pp <- results  %>%
+  pivot_longer(cols=c("FDR", "Power"), names_to='Key', values_to='Value') %>%
+  mutate(Key = factor(Key, key.values, key.labels))  %>%
+  ggplot(aes(x=Adjustment, y=Value, color=Method, shape=Method)) +
+  geom_point(alpha=pt_alpha, size=pt_size) +
+  geom_line(size=l_size, alpha=l_alpha) +
+  geom_hline(data=df.nominal, aes(yintercept=Value)) +
+  # sets the axis limit
+  geom_point(data=df.ghost, aes(x=0.8,y=0.1), alpha=0) +
+  geom_point(data=df.ghost, aes(x=0.8,y=0), alpha=0) +
+  scale_color_manual(values=color.scale) +
+  scale_shape_manual(values=shape.scale) +
+  theme_bw()+
+  theme(
+    strip.text = element_text(size = font_size, color = "black"),
+    axis.title = element_text(size = font_size),
+    axis.text = element_text(size = axis_size),
+    legend.text = element_text(size = legend_size),
+    legend.title = element_text(size = legend_size),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+  )+
+  facet_wrap(.~Key, scales="free") +
+  xlab(expression(a)) +
+  ylab("")
+pp
+
+ggsave(filename = sprintf("%s/dependent2.pdf", fig.dir), plot = pp,
+       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+
+
+
+#######################################
+#         Dependent setting 3         #
+#######################################
+load(sprintf("%s/dependent3.RData", results.dir))
+
+Method.values <- c("BH", "LASLA.DD")
+Method.labels <- c("BH", "LASLA.DD")
+color.scale <- c("#3366CC","#66CCFF")
+
+results <- results %>%
+  mutate(Method = factor(Method, levels = Method.values, labels = Method.labels))
+
+# Define common elements for both plots
+common_theme <- theme_bw() +
+  theme(
+    strip.text = element_text(size = font_size, color = "black"),
+    axis.title = element_text(size = axis_size),
+    axis.text.x = element_blank(),  # Hide x-axis labels
+    axis.ticks.x = element_blank(),  # Hide x-axis ticks
+    axis.text.y = element_text(size = axis_size),
+    legend.text = element_text(size = legend_size),  # Adjust legend text size
+    legend.title = element_text(size = legend_size),
+    plot.margin = margin(5, 5, 5, 5)
+  )
+
+# Filter and plot for FDP
+pp_FDP <- results %>%
+  pivot_longer(cols = c("FDP", "Power"), names_to = 'Key', values_to = 'Value') %>%
+  filter(Key == "FDP") %>%
+  ggplot(aes(x = Method, y = Value, fill = Method)) +
+  geom_boxplot(outlier.shape = NA, width = 0.6, lwd = 0.5) +
+  scale_fill_manual(values = color.scale) +
+  coord_cartesian(ylim = c(0, 0.07)) +  # Set y-axis limit for FDP
+  labs(x = NULL, y = NULL) +
+  facet_wrap(. ~Key)+
+  common_theme +
+  theme(legend.position = "none")  # Remove legend for individual plot
+
+# Filter and plot for Power
+pp_Power <- results %>%
+  pivot_longer(cols = c("FDP", "Power"), names_to = 'Key', values_to = 'Value') %>%
+  filter(Key == "Power") %>%
+  ggplot(aes(x = Method, y = Value, fill = Method)) +
+  geom_boxplot(outlier.shape = NA, width = 0.6, lwd = 0.5) +
+  scale_fill_manual(values = color.scale) +
+  coord_cartesian(ylim = c(0.2, 0.9)) +
+  labs(x = NULL, y = NULL)+
+  facet_wrap(. ~Key)+
+  common_theme
+
+# Combine the two plots and share a single legend
+pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & theme(legend.position = "right")
+
+# Display the combined plot
+pp
+ggsave(filename = sprintf("%s/dependent3.pdf", fig.dir), plot = pp,
+       dpi = 300, device=NULL, width=plot_width-1, height=plot_height)
 
 

@@ -1,3 +1,5 @@
+library(Matrix)
+
 #############################################################
 # File contains oracle functions or other utility functions #
 #############################################################
@@ -575,4 +577,67 @@ lasla_oracle_weights.func <- function(x, pis, gamma, dist_type, q = 0.05, ...){
   nu<-10e-5
   weights[which(weights<nu)]<-nu # stabilization
   return(weights)
+}
+
+
+
+#######################################
+#      Generate correlation           #
+#######################################
+generate_correlation_matrix <- function(m, cor_type, block_size = NULL, rho = NULL, band = NULL, factor = NULL) {
+  if (cor_type == "block") {
+    # Check for required parameters
+    if (is.null(block_size) || is.null(rho)) {
+      stop("For 'block' correlation, 'block_size' and 'rho' must be provided.")
+    }
+    # Ensure m is divisible by block_size
+    if (m %% block_size != 0) {
+      stop("'m' must be divisible by 'block_size'.")
+    }
+    
+    num_blocks <- m / block_size
+    single_block <- matrix(rho, nrow = block_size, ncol = block_size)
+    diag(single_block) <- 1
+    Sigma <- bdiag(replicate(num_blocks, single_block, simplify = FALSE))
+    Sigma <- as.matrix(Sigma)
+    
+  } else if (cor_type == "banded") {
+    # Check for required parameter
+    if (is.null(band) || is.null(rho)) {
+      stop("For 'banded' correlation, 'band' and 'rho' must be provided.")
+    }
+    
+    Sigma <- matrix(0, nrow = m, ncol = m)
+    for (i in 1:m) {
+      for (j in max(1, i - band):min(m, i + band)) {
+        if (i != j) {
+          Sigma[i, j] <- rho / abs(i - j)
+        } else {
+          Sigma[i, j] <- 1
+        }
+      }
+    }
+    
+  } else if (cor_type == "random") {
+    # For random correlation, assume the correlation is randomly generated from 
+    # a uniform distribution within [-rho, rho]
+    if (is.null(factor)) {
+      stop("For 'random' correlation, 'factor' must be provided.")
+    }
+    
+    # Generate a random matrix W with dimensions d x k
+    W <- matrix(rnorm(m * factor), nrow = m, ncol = factor)
+    
+    # Compute the matrix S as W * W' + diag(rand(1, d))
+    S <- W %*% t(W) + diag(runif(m))
+    
+    # Normalize S to obtain a correlation matrix
+    Sigma <- diag(1 / sqrt(diag(S))) %*% S %*% diag(1 / sqrt(diag(S)))
+    
+    
+  } else {
+    stop("Invalid 'cor_type' specified. Choose 'block', 'banded', or 'random'.")
+  }
+  
+  return(Sigma)
 }
