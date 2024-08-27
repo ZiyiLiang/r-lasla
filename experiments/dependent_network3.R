@@ -28,7 +28,6 @@ bh.ntp<-rep(0, nrep)
 lasla.dd.fdp<-rep(0, nrep)
 lasla.dd.ntp<-rep(0, nrep)
 
-
 pb <- progress_bar$new(total = nrep)   # show progress bar
 
 for (i in 1:nrep)
@@ -41,19 +40,14 @@ for (i in 1:nrep)
   sd0 <- rep(1,m)
   sd1 <- rep(1,m)
   
-  raw_cor_mat <- generate_correlation_matrix(m, cor_type = cor_type, factor = factor)
-  cor_mat <- raw_cor_mat
-  
-  # Adjust the correlation strength by dividing off-diagonal elements by an adjustment factor
-  cor_mat[upper.tri(cor_mat)] <- raw_cor_mat[upper.tri(cor_mat)] / adjustment
-  cor_mat[lower.tri(cor_mat)] <- raw_cor_mat[lower.tri(cor_mat)] / adjustment
-  
+  cor_mat <- generate_correlation_matrix(m, cor_type = cor_type, factor = factor)
+
   x0<-mvrnorm(n = 1, mu = mu0, Sigma = cor_mat)
   x1<-mvrnorm(n = 1, mu = mu1, Sigma = cor_mat)
   x<-(1-theta)*x0+theta*x1
   pv<-2*pnorm(-abs(x), 0, 1)
-  
-  
+
+
   # generate the distance matrix
   d_lasla<-matrix(rep(0,m*m),m,m)
   for (k in 1:m) {
@@ -68,30 +62,22 @@ for (i in 1:nrep)
   }
   d_lasla <- d_lasla*2
   pis_lasla<-lasla_pis(x, d_lasla, pval=pv, eps = 0, h = bw, tau=bh.func(pv,0.8)$th)
-  
+
   bh.res<-bh.func(pv, q)
   bh.de<-bh.res$de
   bh.fdp[i]<-sum((1-theta)*bh.de)/max(sum(bh.de), 1)
   bh.ntp[i]<-sum(theta*bh.de)/sum(theta)
-  
+
   weight<-lasla_weights(x,d_lasla,pis_lasla,mu0,sd0, eps = 0, h = bw, progress = FALSE)
   lasla.dd.res<-lasla_thres(pvs=pv, pis_lasla, ws=weight, q)
   lasla.dd.de<-lasla.dd.res$de
   lasla.dd.fdp[i]<-sum((1-theta)*lasla.dd.de)/max(sum(lasla.dd.de), 1)
   lasla.dd.ntp[i]<-sum(theta*lasla.dd.de)/sum(theta)
-  
+
 }
 
 dependent_fdr3.mthd<-cbind(bh.fdp, lasla.dd.fdp)
 dependent_etp3.mthd<-cbind(bh.ntp, lasla.dd.ntp)
-
-
-
-#######################################
-#          Preview Results            #
-#######################################
-
-
 
 
 #######################################
@@ -99,7 +85,7 @@ dependent_etp3.mthd<-cbind(bh.ntp, lasla.dd.ntp)
 #######################################
 data_dir <- "./results"
 
-save <-TRUE
+save <-FALSE
 
 if (save){
   method_names <- c("BH","LASLA.DD")
