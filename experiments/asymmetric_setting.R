@@ -67,7 +67,7 @@ for (i in 1:nrep)
     law.or.fdp[i, j]<-sum((1-theta)*law.or.de)/max(sum(law.or.de), 1)
     law.or.ntp[i, j]<-sum(theta*law.or.de)/sum(theta)
     
-    awor <- awor_asymmetric.func(x, pis, gamma, mu0, mu1, sd0, sd1, q)
+    awor <- awor_asymmetric.func(x, pis, gamma, mu1, sd1, q)
     lasla.or.res<-lasla_thres(pvs=pv, pis=pis, ws=awor, q)
     lasla.or.de<-lasla.or.res$de
     lasla.or.fdp[i, j]<-sum((1-theta)*lasla.or.de)/max(sum(lasla.or.de), 1)

@@ -52,6 +52,7 @@ rsconnect/
 /pics 
 /results
 /data
+/paper
 
 # Internal files for debugging purposes
 /experiments/debug.R

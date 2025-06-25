@@ -3,6 +3,9 @@ setwd("C:/Users/liang/Documents/GitHub/r-lasla")
 source('./methods/lasla_funcs.R')
 source('./methods/utils.R')
 
+library(adaptMT)
+library(ggdendro)
+
 #######################################
 #           Setting 1                 #
 #######################################
@@ -168,7 +171,7 @@ matplot(noise_l.vec, etp_mult1.mthd, type="o", pch=1:7, lwd=2, main="Mult-settin
 #######################################
 #             Save Results            #
 #######################################
-save <- FALSE
+save <- TRUE
 
 if (save){
   data_dir <- "./results"

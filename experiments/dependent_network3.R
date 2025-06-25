@@ -85,7 +85,7 @@ dependent_etp3.mthd<-cbind(bh.ntp, lasla.dd.ntp)
 #######################################
 data_dir <- "./results"
 
-save <-FALSE
+save <-TRUE
 
 if (save){
   method_names <- c("BH","LASLA.DD")

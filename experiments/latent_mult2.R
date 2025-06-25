@@ -178,7 +178,7 @@ matplot(noise_l.vec, etp_mult2.mthd, type="o", pch=1:7, lwd=2, main="Mult-settin
 #######################################
 #             Save Results            #
 #######################################
-save <- FALSE
+save <- TRUE
 
 if (save){
   data_dir <- "./results"

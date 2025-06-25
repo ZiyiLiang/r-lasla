@@ -16,7 +16,7 @@ sigma.vec<-seq(from=0.2, to=1, by=0.2)
 pis<-rep(0.1, m)
 q<-0.05
 np<-length(sigma.vec)
-nrep<-1000
+nrep<-2000
 pb <- progress_bar$new(total = nrep)   # show progress bar
 
 
@@ -48,10 +48,9 @@ for (i in 1:nrep)
   theta<-rbinom(m, size=1, prob=pis)
   pii<-sum(theta)/m
   x0<-rnorm(m, mean=0, sd=1)
-  x1_base <- rnorm(m, mean=mean, sd=0.1)
+  gamma<-rep(0.5,m)
   isPositive<-rbinom(m, size=1, prob=0.5)
-  x1_base <- isPositive*x1_base + (1-isPositive)*(-x1_base)
-  
+
   for (j in 1:np)
   {
     set.seed(2000*i+j)
@@ -59,7 +58,8 @@ for (i in 1:nrep)
     isNoisy<-rbinom(m, size=1, prob=1/2)
     mu1<-rep(mean,m)
     sd1<-isNoisy*rep(1,m) + (1-isNoisy)*rep(sigma,m)
-    x1<-isNoisy*(x1_base+rnorm(m,0,0.9)) + (1-isNoisy)*(x1_base+rnorm(m,0,sigma-0.1))
+    x1<-isNoisy*(rnorm(m,mean = mean,sd=1)) + (1-isNoisy)*(rnorm(m,mean=mean,sd=sigma))
+    x1<-isPositive*x1 + (1-isPositive)*(-x1)
     x<-(1-theta)*x0+theta*x1
     pv<-2*pnorm(-abs(x), 0, 1)
     
@@ -76,7 +76,7 @@ for (i in 1:nrep)
     law.or.fdp[i, j]<-sum((1-theta)*law.or.de)/max(sum(law.or.de), 1)
     law.or.ntp[i, j]<-sum(theta*law.or.de)/sum(theta)
     
-    wor_lasla <- lasla_oracle_weights.func(x, pis, dist_type="normal", q, mu1=mu1, sd1=sd1)
+    wor_lasla <- lasla_oracle_weights.func(x, pis,gamma, dist_type="normal", q, mu1=mu1, sd1=sd1)
     lasla.or.res<-lasla_thres(pvs=pv, pis=pis, ws=wor_lasla, q)
     lasla.or.de<-lasla.or.res$de
     lasla.or.fdp[i, j]<-sum((1-theta)*lasla.or.de)/max(sum(lasla.or.de), 1)
@@ -115,7 +115,7 @@ matplot(sigma.vec, altshape_etp.mthd, type="o", pch=1:3, lwd=2, main="Power Comp
 #######################################
 #             Save Results            #
 #######################################
-save = FALSE
+save = TRUE
 
 if (save){
   data_dir <- "./results"

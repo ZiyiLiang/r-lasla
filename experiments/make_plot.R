@@ -2,8 +2,10 @@ library(tidyverse)
 library(kableExtra)
 library(dplyr)
 library(patchwork)
+library(extrafont)
 
 options(width=160)
+# font_import()    # only need to import once
 
 #######################################
 #          Plots for paper            #
@@ -11,6 +13,7 @@ options(width=160)
 setwd("C:/Users/liang/Documents/GitHub/r-lasla")
 fig.dir = "./pics"
 results.dir = "./results"
+windowsFonts(`Times New Roman` = windowsFont("Times New Roman"))  # Register the font 
 
 key.values <- c("FDR", "Power")
 key.labels <- c("FDR", "Power")
@@ -22,12 +25,12 @@ color.scale <- c("#3366CC", "#66CCFF", "#CC79A7", "yellow", "orange", "red")
 shape.scale <- c(15, 2, 4, 3, 1, 18)
 
 
-plot_width = 10
+plot_width = 9.8
 plot_height = 3
 legend_size = 14
 font_size = 17
 axis_size = 15
-pt_size = 2
+pt_size = 3
 pt_alpha = 0.8
 l_alpha = 0.95
 l_size = 0.7
@@ -35,6 +38,8 @@ l_size = 0.7
 #######################################
 #       Asymmetric setting            #
 #######################################
+load(sprintf("%s/asymmetric.RData", results.dir))
+
 plot.alpha <- 0.05
 df.nominal <- tibble(Key=c("FDR"), Value=plot.alpha) %>%
               mutate(Key = factor(Key, key.values, key.labels))    
@@ -46,7 +51,7 @@ pp <- results  %>%
       mutate(Key = factor(Key, key.values, key.labels))  %>%
 ggplot(aes(x=Gamma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
 geom_hline(data=df.nominal, aes(yintercept=Value)) +
 # sets the axis limit
 geom_point(data=df.ghost, aes(x=1,y=0.03), alpha=0) +
@@ -55,12 +60,12 @@ scale_color_manual(values=color.scale) +
 scale_shape_manual(values=shape.scale) +
 theme_bw()+
 theme(
-  strip.text = element_text(size = font_size, color = "black"),
-  axis.title = element_text(size = font_size),
-  axis.text = element_text(size = axis_size),
-  legend.text = element_text(size = legend_size),
-  legend.title = element_text(size = legend_size),
-  plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+  strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+  axis.title = element_text(size = font_size, family = "Times New Roman"),
+  axis.text = element_text(size = axis_size, family = "Times New Roman"),
+  legend.text = element_text(size = legend_size, family = "Times New Roman"),
+  legend.title = element_text(size = legend_size, family = "Times New Roman"),
+  plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
 )+
 facet_wrap(.~Key, scales="free") +
 xlab(expression(gamma)) +
@@ -69,13 +74,15 @@ ggtitle("(a)")
 pp
 
 ggsave(filename = sprintf("%s/asymmetric.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
 #######################################
 #        Alt-shape setting            #
 #######################################
+load(sprintf("%s/alt_dist.RData", results.dir))
+
 plot.alpha <- 0.05
 df.nominal <- tibble(Key=c("FDR"), Value=plot.alpha) %>%
   mutate(Key = factor(Key, key.values, key.labels))    
@@ -87,7 +94,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Sigma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=1,y=0.03), alpha=0) +
@@ -96,23 +103,21 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
-    
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(sigma)) +
   ylab("")+
   ggtitle("(b)")
-
-
+pp
 
 ggsave(filename = sprintf("%s/alt_dist.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -132,7 +137,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Gamma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.5,y=0.03), alpha=0) +
@@ -141,12 +146,12 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(r)) +
@@ -154,7 +159,7 @@ pp <- results  %>%
 pp
 
 ggsave(filename = sprintf("%s/hetero-asymmetric.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -166,13 +171,14 @@ load(sprintf("%s/heterogeneous_distribution.RData", results.dir))
 # Define common elements for both plots
 common_theme <- theme_bw() +
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = axis_size),
+    text = element_text(family = "Times New Roman"),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = axis_size, family = "Times New Roman"),
     axis.text.x = element_blank(),  # Hide x-axis labels
     axis.ticks.x = element_blank(),  # Hide x-axis ticks
-    axis.text.y = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),  # Adjust legend text size
-    legend.title = element_text(size = legend_size),
+    axis.text.y = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),  # Adjust legend text size
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
     plot.margin = margin(5, 5, 5, 5)
   )
 
@@ -201,13 +207,15 @@ pp_Power <- results %>%
   common_theme
 
 # Combine the two plots and share a single legend
-pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & theme(legend.position = "right")
+pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & 
+  theme(legend.position = "right",
+        text = element_text(family = "Times New Roman"))
 
 # Display the combined plot
 pp
 
 ggsave(filename = sprintf("%s/hetero-alt.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width-1, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width-1, height=plot_height)
 
 
 
@@ -228,13 +236,14 @@ results <- results %>%
 # Define common elements for both plots
 common_theme <- theme_bw() +
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = axis_size),
+    text = element_text(family = "Times New Roman"),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = axis_size, family = "Times New Roman"),
     axis.text.x = element_blank(),  # Hide x-axis labels
     axis.ticks.x = element_blank(),  # Hide x-axis ticks
-    axis.text.y = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),  # Adjust legend text size
-    legend.title = element_text(size = legend_size),
+    axis.text.y = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),  # Adjust legend text size
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
     plot.margin = margin(5, 5, 5, 5)
   )
 
@@ -264,12 +273,14 @@ pp_Power <- results %>%
   common_theme
 
 # Combine the two plots and share a single legend
-pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & theme(legend.position = "right")
+pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & 
+  theme(legend.position = "right",
+        text = element_text(family = "Times New Roman"))
 
 # Display the combined plot
 pp
 ggsave(filename = sprintf("%s/hetero-sparsity.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width-1, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width-1, height=plot_height)
 
 
 
@@ -296,7 +307,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Mean, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=2.5,y=0.1), alpha=0) +
@@ -305,12 +316,12 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(mu[1])) +
@@ -319,7 +330,7 @@ pp <- results  %>%
 
 
 ggsave(filename = sprintf("%s/network1.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -347,7 +358,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Distance, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0,y=0.1), alpha=0) +
@@ -356,13 +367,12 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
-    
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(mu[2])) +
@@ -371,7 +381,7 @@ pp <- results  %>%
 
 
 ggsave(filename = sprintf("%s/network2.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -404,7 +414,7 @@ pp_first5 <- results_first5 %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Sigma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   geom_point(data=df.ghost, aes(x=0.5,y=0.1), alpha=0) +
   geom_point(data=df.ghost, aes(x=2.0,y=0), alpha=0) +
@@ -412,12 +422,12 @@ pp_first5 <- results_first5 %>%
   scale_shape_manual(values=shape.scale[1:5]) +  # Limit to first 5 shapes
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(sigma)) +
@@ -433,7 +443,7 @@ pp_lasla_wbh_awbh <- results_lasla_wbh_awbh %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Sigma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   geom_point(data=df.ghost, aes(x=0.5,y=0.1), alpha=0) +
   geom_point(data=df.ghost, aes(x=2.0,y=0), alpha=0) +
@@ -441,12 +451,12 @@ pp_lasla_wbh_awbh <- results_lasla_wbh_awbh %>%
   scale_shape_manual(values=shape.scale[1:3]) +  # Limit to specific shapes for these methods
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(sigma)) +
@@ -458,9 +468,9 @@ pp_first5
 pp_lasla_wbh_awbh
 
 ggsave(filename = sprintf("%s/latent1_weight_comp.pdf", fig.dir), plot = pp_first5,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 ggsave(filename = sprintf("%s/latent1_thres_comp.pdf", fig.dir), plot = pp_lasla_wbh_awbh,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 #######################################
@@ -492,7 +502,7 @@ pp_first5 <- results_first5 %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Mean, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   geom_point(data=df.ghost, aes(x=3.0,y=0.1), alpha=0) +
   geom_point(data=df.ghost, aes(x=4.0,y=0), alpha=0) +
@@ -500,12 +510,12 @@ pp_first5 <- results_first5 %>%
   scale_shape_manual(values=shape.scale[1:5]) +  # Limit to first 5 shapes
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(mu)) +
@@ -521,7 +531,7 @@ pp_lasla_wbh_awbh <- results_lasla_wbh_awbh %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Mean, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   geom_point(data=df.ghost, aes(x=3.0,y=0.1), alpha=0) +
   geom_point(data=df.ghost, aes(x=4.0,y=0), alpha=0) +
@@ -529,12 +539,12 @@ pp_lasla_wbh_awbh <- results_lasla_wbh_awbh %>%
   scale_shape_manual(values=shape.scale[1:3]) +  # Limit to specific shapes for these methods
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(mu)) +
@@ -546,13 +556,17 @@ pp_first5
 pp_lasla_wbh_awbh
 
 ggsave(filename = sprintf("%s/latent2_weight_comp.pdf", fig.dir), plot = pp_first5,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 ggsave(filename = sprintf("%s/latent2_thres_comp.pdf", fig.dir), plot = pp_lasla_wbh_awbh,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
+
+
 
 #######################################
 #       Latent-Mult setting 1        #
 #######################################
+load(sprintf("%s/latent_mult1.RData", results.dir))
+
 Method.values <- c("BH", "LASLA.OR","LASLA.DD","AVG")
 Method.labels <- c("BH", "LASLA.OR","Mahalanobis","Average")
 color.scale <- c("#CC79A7", "#66CCFF", "#3366CC","orange")
@@ -569,7 +583,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Sigma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.5,y=0.1), alpha=0) +
@@ -578,12 +592,12 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale, labels=c("BH"="BH", "LASLA.OR"="LASLA.OR","LASLA.DD"="Mahalanobis","AVG"="Average"),breaks=Method.values) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
     
   )+
   facet_wrap(.~Key, scales="free") +
@@ -593,13 +607,15 @@ pp <- results  %>%
   pp
 
 ggsave(filename = sprintf("%s/latent_mult1.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
 #######################################
 #       Latent-Mult setting 2        #
 #######################################
+load(sprintf("%s/latent_mult2.RData", results.dir))
+
 Method.values <- c("BH", "LASLA.OR","LASLA.DD","AVG")
 Method.labels <- c("BH", "LASLA.OR","Mahalanobis","Average")
 color.scale <- c("#CC79A7", "#66CCFF", "#3366CC", "orange")
@@ -616,7 +632,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Sigma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   
   # sets the axis limit
@@ -626,13 +642,12 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale, labels=c("BH"="BH", "LASLA.OR"="LASLA.OR","LASLA.DD"="Mahalanobis","AVG"="Average"),breaks=Method.values) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
-    
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(sigma)) +
@@ -641,7 +656,7 @@ pp <- results  %>%
   pp
 
 ggsave(filename = sprintf("%s/latent_mult2.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -668,7 +683,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Sigma, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.1,y=0.1), alpha=0) +
@@ -677,23 +692,20 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
-    
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(sigma)) +
   ylab("")+
   ggtitle("(a)")
 
-pp
-
 ggsave(filename = sprintf("%s/regression1.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -720,7 +732,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Mean, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.25,y=0.1), alpha=0) +
@@ -729,13 +741,12 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
-    
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(mu)) +
@@ -745,7 +756,7 @@ pp <- results  %>%
 pp
 
 ggsave(filename = sprintf("%s/regression2.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -772,7 +783,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Rho, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.8,y=0.1), alpha=0) +
@@ -781,12 +792,12 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(rho)) +
@@ -794,7 +805,7 @@ pp <- results  %>%
 pp
 
 ggsave(filename = sprintf("%s/dependent1.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -821,7 +832,7 @@ pp <- results  %>%
   mutate(Key = factor(Key, key.values, key.labels))  %>%
   ggplot(aes(x=Adjustment, y=Value, color=Method, shape=Method)) +
   geom_point(alpha=pt_alpha, size=pt_size) +
-  geom_line(size=l_size, alpha=l_alpha) +
+  geom_line(linewidth=l_size, alpha=l_alpha) +
   geom_hline(data=df.nominal, aes(yintercept=Value)) +
   # sets the axis limit
   geom_point(data=df.ghost, aes(x=0.8,y=0.1), alpha=0) +
@@ -830,12 +841,12 @@ pp <- results  %>%
   scale_shape_manual(values=shape.scale) +
   theme_bw()+
   theme(
-    strip.text = element_text(size = font_size, color = "black"),
-    axis.title = element_text(size = font_size),
-    axis.text = element_text(size = axis_size),
-    legend.text = element_text(size = legend_size),
-    legend.title = element_text(size = legend_size),
-    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size),
+    strip.text = element_text(size = font_size, color = "black", family = "Times New Roman"),
+    axis.title = element_text(size = font_size, family = "Times New Roman"),
+    axis.text = element_text(size = axis_size, family = "Times New Roman"),
+    legend.text = element_text(size = legend_size, family = "Times New Roman"),
+    legend.title = element_text(size = legend_size, family = "Times New Roman"),
+    plot.title = element_text(hjust = -0.11, vjust = -4, size=font_size, family = "Times New Roman")
   )+
   facet_wrap(.~Key, scales="free") +
   xlab(expression(a)) +
@@ -843,7 +854,7 @@ pp <- results  %>%
 pp
 
 ggsave(filename = sprintf("%s/dependent2.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width, height=plot_height)
 
 
 
@@ -898,11 +909,13 @@ pp_Power <- results %>%
   common_theme
 
 # Combine the two plots and share a single legend
-pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & theme(legend.position = "right")
+pp <- pp_FDP + pp_Power + plot_layout(guides = "collect") & 
+  theme(legend.position = "right",
+        text = element_text(family = "Times New Roman"))
 
 # Display the combined plot
 pp
 ggsave(filename = sprintf("%s/dependent3.pdf", fig.dir), plot = pp,
-       dpi = 300, device=NULL, width=plot_width-1, height=plot_height)
+       dpi = 300, device=cairo_pdf, width=plot_width-1, height=plot_height)
 
 

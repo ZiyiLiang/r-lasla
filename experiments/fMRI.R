@@ -190,9 +190,12 @@ bh_plot <- plot_ly(x = bh.rejected.coords[,1],
                    mode = 'markers',
                    marker = list(color = 'red2', size = 4)) %>%
   layout(scene = list(camera = camera,
-                      xaxis = list(title = '', range = x_range, gridcolor ="#D3D3D3"),
-                      yaxis = list(title = '', range = y_range),
-                      zaxis = list(title = '', range = z_range),
+                      xaxis = list(title = '', range = x_range, gridcolor ="#D3D3D3",
+                                   tickfont = list(family = "Times New Roman", size = 15)),
+                      yaxis = list(title = '', range = y_range,
+                                   tickfont = list(family = "Times New Roman", size = 15)),
+                      zaxis = list(title = '', range = z_range,
+                                   tickfont = list(family = "Times New Roman", size = 15)),
                       aspectratio = list(x = 1, y = 1, z = 0.6)),
          title = "BH Rejections") %>%
   config(displayModeBar = TRUE)
@@ -206,9 +209,12 @@ lasla_plot <- plot_ly(x = lasla.rejected.coords[,1],
                       mode = 'markers',
                       marker = list(color = '#cc3333', size = 4)) %>%
   layout(scene = list(camera = camera,
-                      xaxis = list(title = '', range = x_range),
-                      yaxis = list(title = '', range = y_range),
-                      zaxis = list(title = '', range = z_range),
+                      xaxis = list(title = '', range = x_range,
+                                   tickfont = list(family = "Times New Roman", size = 15)),
+                      yaxis = list(title = '', range = y_range,
+                                   tickfont = list(family = "Times New Roman", size = 15)),
+                      zaxis = list(title = '', range = z_range,
+                                   tickfont = list(family = "Times New Roman", size = 15)),
                       aspectratio = list(x = 1, y = 1, z = 0.6)),
          title = "LASLA Rejections") %>%
   config(displayModeBar = TRUE)
